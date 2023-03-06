@@ -1,0 +1,4 @@
+name = "rumigen"
+uuid = "8c3994ea-dc96-4bc7-9897-f66023858c77"
+authors = ["Xijiang Yu <xijiang@users.noreply.github.com>"]
+version = "0.1.0"
