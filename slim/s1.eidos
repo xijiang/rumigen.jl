@@ -1,0 +1,102 @@
+initialize()
+{
+	// Definition of constant variables
+	defineConstant("Ne", 1e5);
+	defineConstant("N_generations", 1000);
+	defineConstant("Rho", 1e-7);
+	defineConstant("tractlen", 1e4);
+	defineConstant("genomeSize", 2e6);
+	defineConstant("HGTrate", Rho * genomeSize); // HGT probability
+	
+	// Initialization
+	initializeSLiMModelType("nonWF");
+	initializeTreeSeq(); // record trees for recapitation and/or adding neutral mutations later
+	initializeMutationRate(0); // no neutral mutations in the forward simulation
+	initializeMutationType("m1", 1.0, "f", 0.0); // neutral (unused)
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, genomeSize - 1);
+	initializeRecombinationRate(0); // In SLiM recombination is between sister chromatids
+}
+
+1 early()
+{
+	sim.addSubpop("p1", Ne);
+	community.rescheduleScriptBlock(s1, start=N_generations, end=N_generations);
+}
+
+reproduction()
+{
+	// each parental individual reproduces twice, with independent probabilities of HGT
+	parents = p1.individuals;
+	
+	for (rep in 0:1)
+	{
+		
+		if (HGTrate > 0)
+		{
+			// for all daughter cells, which ones are going to undergo a HGT?
+			is_HGT = rbinom(size(parents), 1, HGTrate);
+		}
+		else
+		{
+			is_HGT = integer(size(parents)); // vector of 0s
+		}
+		for (i in seqAlong(parents))
+		{
+			if (is_HGT[i])
+			{
+				// Pick another individual to receive a piece of DNA from
+				HGTsource = p1.sampleIndividuals(1, exclude=parents[i]).genome1;
+				// Choose which fragment
+				pos_beg = rdunif(1, 0, genomeSize - 1);
+				tractLength = rgeom(1, 1.0 / tractlen);
+				pos_end = pos_beg + tractLength - 1;
+				
+				// Prevent an edge case when both
+				// pos_beg and tractLength are equal to 0
+				
+				if (pos_end == -1) {
+					pos_end = 1;
+				}
+				else
+				{
+					pos_end = integerMod(pos_beg + tractLength - 1, genomeSize);
+				}
+				
+				// HGT from pos_beg forward to pos_end on a circular chromosome
+				if (pos_beg > pos_end)
+					breaks = c(0, pos_end, pos_beg);
+				else
+					breaks = c(pos_beg, pos_end);
+				subpop.addRecombinant(parents[i].genome1, HGTsource, breaks, NULL, NULL, NULL);
+			}
+			else
+			{
+				// no horizontal gene transfer; clonal replication
+				subpop.addRecombinant(parents[i].genome1, NULL, NULL, NULL, NULL, NULL);
+			}
+		}
+	}
+	// deactivate the reproduction() callback for this generation
+	self.active = 0;
+}
+
+early()
+{
+	inds = p1.individuals;
+	ages = inds.age;
+	
+	// kill off parental individuals; biologically they don’t even exist,
+	// since they split by mitosis to generate their offspring
+	inds[ages > 0].fitnessScaling = 0.0;
+	
+	// density-dependent population regulation on juveniles, toward Ne
+	juvenileCount = sum(ages == 0);
+	inds[ages == 0].fitnessScaling = Ne / juvenileCount;
+}
+
+s1 10000late()
+{
+	sim.treeSeqOutput("mySimulation.trees");
+	sim.simulationFinished();
+}
