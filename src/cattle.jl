@@ -1,7 +1,3 @@
-# the types that might be used in matrices for breeding
-const vldtype = (Bool, Int8, Int16, Int32, Int64, Int128, UInt8, UInt16,
-                 UInt32, UInt64, UInt128, Float16, Float32, Float64)
-
 """
     function cattle_genome(macs, nid::Int, dir=pwd())
 Simulate SNP on cattle autosomes.
@@ -99,70 +95,4 @@ function macs_2_hap(raw)
     println()
     serialize(joinpath(parent, "$bar-map.ser"), tmap)
     return bar
-end
-
-"""
-    function macs2haps(raw)
-Merge the chrosomes from `MaCS` into one binary file.
-The storage is also locus majored, i.e., of `nLoci × nHap`.
-"""
-function macs2haps(raw)
-    bar = randstring(5)         # barcode of this simulation
-    tprintln("  - Collect founder data {cyan}$bar{/cyan} from MaCS in {cyan}$raw{/cyan} of chromosome:")
-
-    # Preparetion
-    isdir(raw) || error("$raw not exists")
-    raw[end] == '/' && (raw = raw[1:end-1])
-    chrs = Int8[]
-    for f in readdir(raw)
-        occursin.(r"^chr", f) && push!(chrs, parse(Int8, split(f, '.')[2]))
-    end
-    sort!(chrs)           # chromosome number in integer, and in order
-    parent = dirname(raw) # path
-    fgt = joinpath(parent, "$bar-hap.bin")
-    tmap = DataFrame(chr=Int8[], pos=Int64[], frq=Float64[])
-
-    nlc = begin                 # Determine target dimension
-        i = 0
-        for c in chrs
-            chr = joinpath(raw, "chr.$c")
-            for line in eachline(chr)
-                line[1:4] == "SITE" && (i += 1)
-            end
-        end
-        i
-    end
-    nhp = begin                 # Determin n haplotypes, or 2nid
-        i = 0
-        for line in eachline(joinpath(raw, "chr.$(chrs[1])"))
-            line[1:4] == "SITE" && begin
-                i = length(split(line)[5])
-                break
-            end
-        end
-        i
-    end
-    alc = 0                     # accumulated n-loci
-    tmap = DataFrame(chr=zeros(Int8, nlc),
-        pos=zeros(Int64, nlc),
-        frq=zeros(Float64, nlc))
-    open(fgt, "w+") do io
-        write(io, [nlc, nhp, Fio.typec(Int8)])
-        hps = Mmap.mmap(io, Matrix{Int8}, (nlc, nhp), 24)
-        for c in chrs
-            tprint(" $c")
-            chr = joinpath(raw, "chr.$c")
-            gt, ps, fq = read_macs(chr)
-            m = size(gt)[1]
-            copyto!(view(hps, alc+1:alc+m, :), gt)
-            view(tmap.chr, alc+1:alc+m) .= c
-            copyto!(view(tmap.pos, alc+1:alc+m), ps)
-            copyto!(view(tmap.frq, alc+1:alc+m), fq)
-            alc += m
-            Mmap.sync!(hps)
-        end
-    end
-    serialize(joinpath(parent, "$bar-map.ser"), tmap)
-    println()
-    bar
 end

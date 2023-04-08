@@ -14,12 +14,11 @@ end
 
 @testset "Matrix I/O" begin
     m, n = 3, 3
-    mat = rand(1:10, 3, 3)
+    mat = rand(m, n)
     mfile = "$tdir/matrix.xy"
-    rumigen.writexy(mfile, mat, mattp = 'L')
+    rumigen.writexy(mfile, mat)
     @test isfile(mfile)
-    @test filesize(mfile) == 24 + 6*sizeof(eltype(mat))
-
+    @test filesize(mfile) == 24 + m*n*sizeof(eltype(mat))
 
     #m2 = rumigen.readxy(mfile)
     #@test m == m2
