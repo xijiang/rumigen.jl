@@ -1,5 +1,5 @@
 """
-    function cattle_genome(macs, nid::Int, dir=pwd())
+    function cattle_genome(macs, nid::Int; dir=pwd())
 Simulate SNP on cattle autosomes.
 - `macs` is the path of `macs` executable.
 - `nid` is the number of individuals in a base population.
@@ -7,7 +7,7 @@ Simulate SNP on cattle autosomes.
 
 The chromosome sizes are from https://www.ncbi.nlm.nih.gov/assembly/?term=bos+taurus.
 """
-function cattle_genome(macs, nid::Int, dir=pwd())
+function cattle_genome(macs, nid::Int; dir=pwd())
     nchr = 29
     # https://www.ncbi.nlm.nih.gov/projects/r_gencoll/ftp_service/nph-gc-ftp-service.cgi/?HistoryId=MCID_642d5d40ceff2e2c64293c60&QueryKey=1&ReleaseType=RefSeq&FileType=GENOME_FASTA&Flat=true
     chrs = [158534110, 136231102, 121005158, 120000601, 120089316, 117806340,
@@ -34,65 +34,4 @@ function cattle_genome(macs, nid::Int, dir=pwd())
     end
     println()
     wdir
-end
-
-"""
-    function macs_2_hap(raw)
-Merge and convert `MaCS` results to `01` allele types of `nHap` by `nLoc`.
-Each column in the result file is a locus.
-Path `raw` stores the `MaCS` results.
-Results are written in the parent directory of `raw`.
-File names are of format `chr.1`, `.2`, etc, for genotypes.
-And `info.1`, etc for error message from `macs`.
-The linkage map is a DataFrame,
-and serialized to `map.ser` in the parent dir of `raw` also.
-
-## Binary file `macs.gt`:
-- nhap, nlc, 1: the first 3 × 8 bytes. 1 is for `Int8`.
-- then `01` allele types
-
-Note, elsewhere I use `nlc×nid`, or `nhap×nid` dimensions.
-
-This function has a very low memory footprint. You can use `Fio.transmat` function to transpose the file
-resulted from `macs_2_hap`.
-"""
-function macs_2_hap(raw)
-    # @info "this results in a nHap×nloci matrix."
-    bar = randstring(5)         # barcode of this simulation
-    tprintln("  - Collecting founder data {cyan}$bar{/cyan} from macs of chromosome: ")
-    isdir(raw) || error("$raw not exists")
-    raw[end] == '/' && (raw = raw[1:end-1])
-    chrs = Int8[]
-    for f in readdir(raw)
-        occursin.(r"^chr", f) && push!(chrs, parse(Int8, split(f, '.')[2]))
-    end
-    sort!(chrs)           # chromosome number in integer, and in order
-    parent = dirname(raw) # path
-    fgt = joinpath(parent, "$bar-hap.bin")
-    tmap = DataFrame(chr=Int8[], pos=Int64[], frq=Float64[])
-    open(fgt, "w") do io
-        write(io, [0, 0, 1]) # places for `nhap, nloc` and type, overwitten later
-        nlc, as = 0, nothing # to count nID. `as` is for alleles
-        for ic in chrs
-            this_chr = joinpath(raw, "chr.$ic")
-            tprint(" $ic")
-            nbp = parse(Float64, split(readline(this_chr))[4])
-            for line in eachline(this_chr)
-                line[1:4] ≠ "SITE" && continue
-                _, _, pos, _, as = split(line)
-                pos = Int(round(parse(Float64, pos) * nbp))
-                as = parse.(Int8, collect(as))
-                frq = mean(as)
-                write(io, as)
-                push!(tmap, (ic, pos, frq))
-                nlc += 1
-            end
-        end
-        nhp = length(as)
-        seekstart(io)
-        write(io, [nhp, nlc])
-    end
-    println()
-    serialize(joinpath(parent, "$bar-map.ser"), tmap)
-    return bar
 end

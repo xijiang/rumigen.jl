@@ -25,3 +25,5 @@ Manifest.toml
 ext/
 .vscode/
 rst
+slim/GCF_002263795.2_ARS-UCD1.3_genomic.fna
+slim/*.jl

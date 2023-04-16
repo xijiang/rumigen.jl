@@ -55,9 +55,7 @@ end
     function macs2xy(dir)
 Convert `MaCS` simulation results into `XY` format.  The `MaCS` files 
 are of chr.chr-number and info.chr-number in `dir`.  The merged file are
-stored in `dir/../`. The genotypes are of `nID × nLoci`, such that new 
-chromosomes can be appended to the end of the file without insertions and
-shifts.
+stored in `dir/../`. The genotypes are of `nID x nLoci`, or `header.t = 1`.
 """
 function macs2xy(dir)
     bar = randstring(5)         # barcode of this simulation
@@ -73,7 +71,7 @@ function macs2xy(dir)
     sort!(chrs)           # chromosome number in integer, and in order
     tmp = DataFrame(chr=Int8[], pos=Int64[], frq=Float64[])
     et = findfirst(x -> x == Int8, vldtypes)
-    hdr = xyheader('X', 'Y', ' ', 'F', 'N', et, '1', '\n', 0, 0)
+    hdr = xyheader('X', 'Y', ' ', 'F', 1, et, '\n', '\n', 0, 0)
     tid, tlc = 0, 0
     open(hap, "w+") do io
         write(io, Ref(hdr))

@@ -1,6 +1,7 @@
 module rumigen
 
 using DataFrames
+using Distributions
 using LinearAlgebra
 using Mmap
 using Random
@@ -11,5 +12,9 @@ using Term
 include("cattle.jl")
 include("macs.jl")
 include("xymat.jl")
+include("simulation.jl")
+include("term.jl")
+include("mate.jl")
+include("xps.jl")
 
 end # module rumigen

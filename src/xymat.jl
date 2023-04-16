@@ -1,11 +1,16 @@
 # the types that might be used in matrices for breeding
 const vldtypes = (Bool, Int8, Int16, Int32, Int64, Int128, UInt8, UInt16,
-                  UInt32, UInt64, UInt128, Float16, Float32, Float64)
+    UInt32, UInt64, UInt128, Float16, Float32, Float64)
 
 """
 This struct is designed for long term usage.  The idea magic header
 was from plink bed file.  Matrix I/O is necessary as data nowadays can
 be huge.  Disk I/O is not avoidable.
+
+This header is usually for genotype storage. Whether the genotypes are
+loci-majored or ID-majored is determined by the `t` field.
+When loci-majored, the genotypes is ease for dropping operations, and
+G-BLUP.  When individual-majored, the genotypes is ease for SNP-BLUP.
 
 To initialize a dummy header:
 ```
@@ -17,9 +22,9 @@ struct xyheader
     y::Int8                     # 'Y'
     s::Int8                     # a space 0x20
     f::Int8                     # F, L, U, or S: matrix type
-    t::Int8                     # N, T: transpose or not
+    t::Int8                     # 0 for loci-majored, 1 for ID-majored, or else
     e::Int8                     # eltype
-    r::Int8                     # 0, loci majored
+    r::Int8                     # '\n', reserved for future use
     u::Int8                     # '\n', reserved for future use
     m::Int64                    # nrow, seek(_, 8) to reach here
     n::Int64                    # ncol
@@ -34,8 +39,8 @@ struct parent
     ma::Int32
 end
 
-# \number is octal, default is 8 bits / Int8
-xyheader(nrow::Int64, ncol::Int64) = xyheader(collect("XY FN\2\0\12")..., nrow, ncol)
+# \number is octal, default eltype is Int8
+xyheader(nrow::Int64, ncol::Int64) = xyheader(collect("XY F\0\2\n\n")..., nrow, ncol)
 # otherwise use explicit xyheader constructor
 # use `code = findfirst(x -> x == type, vldtype)` to get the code integer
 
@@ -45,36 +50,37 @@ xyheader(nrow::Int64, ncol::Int64) = xyheader(collect("XY FN\2\0\12")..., nrow, 
 
 """
     function readhdr(io::IOStream)
-Read header from an IOStream in XY format.  Returns matrix storage
-style (``FLUS``), if transposed (``NT``), eltype, if LociMajored and dimensions.
+Read header from an IOStream in XY format.  Returns an `xyheader`.
 """
 function readhdr(io::IOStream)
-    tmp = zeros(Int8, 8)
-    read!(io, tmp)
-    join(Char.(tmp[1:3])) == "XY " || error("Not in XY format")
-    dim = zeros(Int64, 2)
-    read!(io, dim)
-    nrow, ncol = dim
-    itp = tmp[6]
-    LociMajored = tmp[7] == 0
-    return Char(tmp[4]), Char(tmp[5]), vldtypes[itp], LociMajored, nrow, ncol
+    x = zeros(Int8, 24)
+    read!(io, x)
+    reinterpret(xyheader, x)[1]
 end
 
-function readhdr(file::AbstractString)
-    open(file, "r") do io
-        readhdr(io)
+"""
+    function readhdr(io::AbstractString)
+Read header from a file in XY format.  Returns an `xyheader`.
+"""
+function readhdr(io::AbstractString)
+    isfile(io) || error("File $io doesn't exist")
+    filesize(io) ≤ 24 && error("File $io too small to be an 'XY' matrix")
+    open(io, "r") do f
+        readhdr(f)
     end
 end
 
 """
-    function readxyhdr(xy::AbstractString)
-Read header, as is, from a file in XY format.
+    function xyhdr(hdr::xyheader)
+Interpret the header and return matrix storage style (``FLUS``), eltype,
+loci/ID-Majored and dimensions.
 """
-function readxyhdr(xy::AbstractString)
-    isfile(xy) || error("File $xy doesn't exist")
-    x = zeros(UInt8, 24)
-    read!(xy, x)
-    reinterpret(xyheader, x)
+function xyhdr(hdr::xyheader)
+    join(Char.([hdr.x, hdr.y, hdr.s])) == "XY " || error("Not an XY file")
+    mt = Char(hdr.f)
+    mt ∈ "FLUS" || error("Matrix type $mt not defined")
+    et = vldtypes[hdr.e]
+    mt, et, hdr.t, hdr.m, hdr.n
 end
 
 """
@@ -83,12 +89,10 @@ Read a matrix `mat` from `file` according to the specifications in its
 header.
 """
 function readxy(file::AbstractString)
-    isfile(file) || error("File $file doesn't exist")
-    filesize(file) ≤ 24 &&
-        error("File $file too small to be an 'XY' matrix")
-    mat = nothing               # to return if success
+    mat = nothing               # declare a variable
     open(file, "r") do io
-        mt, _, et, _, row, col = readhdr(io)
+        hdr = readhdr(io)
+        mt, et, _, row, col = xyhdr(hdr)
         if mt == Bool
             mat = BitArray(undef, row, col)
             read!(io, mat)
@@ -115,16 +119,13 @@ function readxy(file::AbstractString)
     return mat
 end
 
-# below can be exported
-
 """
-    function writexy(file, mat; mattp = 'F', trans = 'N')
+    function writexy(file, mat::AbstractMatrix; mattp='F', major=0)
 Write a matrix `mat` into `file`, with specified saving type.  Note a
 symmetric matrix is written of its lower triangle.
 """
-function writexy(file, mat::AbstractMatrix; mattp='F', trans='N')
+function writexy(file, mat::AbstractMatrix; mattp='F', major=0)
     mattp ∈ "FLUS" || error("Matrix type $mattp not defined")
-    trans ∈ "NT" || error("ID locus type $trans not defined")
     et = findfirst(x -> x == eltype(mat), vldtypes)
     et === nothing && error("Element type $(eltype(mat)) not supported")
 
@@ -132,7 +133,7 @@ function writexy(file, mat::AbstractMatrix; mattp='F', trans='N')
     nrow, ncol = size(mat)
     mattp ∈ "LUS" && (nrow ≠ ncol) && error("Matrix type $mattp requires square matrix")
 
-    hdr = xyheader('X', 'Y', ' ', mattp, trans, et, '\n', '\n', nrow, ncol)
+    hdr = xyheader('X', 'Y', ' ', mattp, major, et, '\n', '\n', nrow, ncol)
     open(file, "w") do io
         write(io, Ref(hdr))
         if mattp == 'L' || mattp == 'S'
@@ -147,6 +148,7 @@ function writexy(file, mat::AbstractMatrix; mattp='F', trans='N')
             write(io, mat)
         end
     end
+    nothing
 end
 
 """
@@ -195,94 +197,78 @@ function writebed(bed, mat)
 end
 
 """
-    xymerge(file::AbstractString, mat::Matrix; trans='N')
-
-Append genotypes in `mat` to `file`.
-"""
-function xymerge(file::AbstractString, mat::AbstractMatrix; trans='N')
-    isfile(file) || error("File $file doesn't exist")
-    open(file, "r+") do io
-        mt, _, et, _, nrow, ncol = readhdr(io)
-        mt ∈ "LUS" && error("Can't merge triangles")
-        et ≠ eltype(mat) && error("Matrices have different eltypes")
-
-        seekend(io)
-        if trans == 'N'
-            ncl2 = size(mat, 2)
-            nrow ≠ size(mat, 1) && error("Matrices don't match")
-            write(io, mat)
-        else
-            ncl2 = size(mat, 1)
-            nrow ≠ size(mat, 2) && error("Matrices don't match")
-            write(io, mat')
-        end
-
-        seek(io, 16)
-        write(io, [ncol + ncl2])
-    end
-end
-
-"""
-    xymerge(fa::AbstractString, fb::AbstractString)
-
-Append genotypes in `mb` to file `ma`.  This is only valid if the
-matrix type is `F`, and two matrices have same number of ID, or same
-number of loci.
-"""
-function xymerge(fa::AbstractString, fb::AbstractString)
-    (isfile(fa) && isfile(fb)) || error("File $fa or $fb doesn't exist")
-
-    mtx, ntx, etx, _, nrwx, nclx = readhdr(fa)
-    mty, nty, ety, _, nrwy, ncly = readhdr(fb)
-    (mtx == 'F' && mty == 'F') || error("Can't merge triangles")
-    (etx == ety) || error("Not of t`he same eltype matrices")
-    trans = (ntx == nty) ? 'N' : 'T'
-
-    mat = Mmap.mmap(fb, Matrix{ety}, (nrwy, ncly), 24)
-    xymerge(fa, mat, trans=trans)
-end
-
-"""
-    function sampleHap(ixy::AbstractString, imp::AbstractString; nid = 0, nlc = 0)
-Sample `nlc` loci and `nid` ID from genotype file `ixy`, and linkage map 
-file `imp`. The results are written to a new file with a random name in 
-the same directory of `ixy`.
-If `nid` or `nlc` is zero, sample all loci, or ID.
+    function sampleHap(ixy::AbstractString, imp::AbstractString; nhp = 0, nlc = 0, dir = "", LociMajor = true)
+Sample `nlc` loci and `nhp` haplotypes from genotype file `ixy`, 
+and the `nlc` from linkage map file `imp`. The results are written 
+to a new file with a random name in the same directory of `ixy`, or as specified in `dir`.
+If `nhp` or `nlc` is zero, sample all haplotypes, or ID.
+The sampled genotypes are `LociMajored`` for ease of dropping in breeding simulation.
 """
 function sampleHap(ixy::AbstractString, imp::AbstractString;
-                   nhp = 0, nlc = 0)
+                   nhp = 0, nlc = 0, dir = "", LociMajor = true)
+    # Prepare files
     (isfile(ixy) && isfile(imp)) || error("File $ixy or $imp doesn't exist")
-    isodd(nhp) && error("Number of haplotypes must be even")
-    bar, dir = randstring(6), dirname(ixy)
+    iseven(nhp) || error("Number of haplotypes must be even")
+    dir == "" && (dir = dirname(ixy))
+    bar = randstring(6)
     oxy, omp = joinpath.(dir, bar .* ["-hap.xy", "-map.ser"])
 
-    mt, nt, et, LociMajored, rs, cs = readhdr(ixy)
-    tlc, thp = LociMajored ? (rs, cs) : (cs, rs)
-    slc = 0 < nlc < tlc ? sort(shuffle(1:tlc)[1:nlc]) : 1:tlc
-    sid = 0 < nhp < thp ? sort(shuffle(1:thp)[1:nhp]) : 1:thp
+    # The sampling on ID and loci
+    ihdr = readhdr(ixy)
+    mt, et, mj, rs, cs = xyhdr(ihdr)
+    mj ∈ (0, 1) || error("Not a haplotype file") # must be loci- or ID-majored
+    tlc, thp = (mj == 0) ? (rs, cs) : (cs, rs)
+    nhp = (0 < nhp < thp) ? nhp : thp
+    nlc = (0 < nlc < tlc) ? nlc : tlc
+    slc = sort(shuffle(1:tlc)[1:nlc]) # sampled loci must be sorted
+    shp = shuffle(1:thp)[1:nhp] # sampled haplotypes always have diff. orders
+
+    # The sampled linkage map
     mmp = deserialize(imp)
     serialize(omp, mmp[slc, :])
-    ei = findfirst(x -> x == et, vldtypes)
-    hdr = nothing
-    if LociMajored
-        hdr = xyheader('X', 'Y', ' ', mt, nt, ei, 0, '\n', length(slc), length(sid))
-        gt = Mmap.mmap(ixy, Matrix{et}, (tlc, thp), 24)
-        open(oxy, "w") do io
-            write(io, Ref(hdr))
-            write(io, gt[slc, sid])
+
+    # The sampled genotype
+    open(oxy, "w") do io
+        igt = (mj == 0) ? Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24) : Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24)'
+        if LociMajor
+            ohdr = xyheader('X', 'Y', ' ', mt, 0, ihdr.e, '\n', '\n', nlc, nhp)
+            write(io, Ref(ohdr))
+            write(io, igt[slc, shp])
+        else
+            ohdr = xyheader('X', 'Y', ' ', mt, 1, ihdr.e, '\n', '\n', nhp, nlc)
+            write(io, Ref(ohdr))
+            write(io, igt[slc, shp]')
         end
-    else
-        hdr = xyheader('X', 'Y', ' ', mt, nt, ei, 1, '\n', length(sid), length(slc))
-        gt = Mmap.mmap(ixy, Matrix{et}, (thp, tlc), 24)
-        open(oxy, "w") do io
-            write(io, Ref(hdr))
-            write(io, gt[sid, slc])
-        end
-    end 
+    end
     bar
 end
 
-function uniqSNP(ixy::AbstractString)
+"""
+    function codesnp(iv::AbstractArray{Int8}, ov::AbstractArray{UInt16})
+Code SNP alleles of `0` and `1` in `iv` uniquely into `ov`.
+"""
+function codesnp(iv::AbstractArray{Int8}, ov::AbstractArray{UInt16})
+    (length(iv) == length(ov)) || error("Arrays have different sizes")
+    x, y = 0, 1
+    for i in eachindex(iv)
+        if iv[i] == 0
+            ov[i] = x
+            x += 2
+        else
+            ov[i] = y
+            y += 2
+        end
+    end
+    nothing
+end
+
+"""
+    function uniqSNP(ixy::AbstractString; LociMajored = true)
+Uniquely number SNP alleles and write the results to a new file with the same
+`bar` name in the same directory of `ixy`. The result file is usually for
+breeding, hence it is by default loci majored to benefit from sequential I/O.
+"""
+function uniqSNP(ixy::AbstractString; LociMajored = true)
     (isfile(ixy)) || error("File $ixy doesn't exist")
     bar = begin
         bn = basename(ixy)
@@ -290,44 +276,49 @@ function uniqSNP(ixy::AbstractString)
         isnothing(ix) ? randstring(6) : bn[1:ix-1]
     end
     dir = dirname(ixy)
-    mt, nt, et, LociMajored, rs, cs = readhdr(ixy)
+    ihdr = readhdr(ixy)
+    mt, et, mj, ir, ic = xyhdr(ihdr)
     (mt ≠ 'F' || et ≠ Int8) && error("Only support F matrix of Int8")
     oxy = joinpath(dir, bar * "-uhp.xy")
     ei = findfirst(x -> x == UInt16, vldtypes) # to store unique codes for SNP alleles
     cc = LociMajored ? 0 : 1
-    hdr = xyheader('X', 'Y', ' ', mt, nt, ei, cc, '\n', rs, cs)
-    gt = Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24)
+    or, oc = (mj == cc) ? (ir, ic) : (ic, ir)
+    ohdr = xyheader('X', 'Y', ' ', mt, cc, ei, '\n', '\n', or, oc)
+    nhp = LociMajored ? oc : or
+    nhp > 2^15 && error("Maybe too many loci to be uniquely coded with UInt16")
+
+    gt = Mmap.mmap(ixy, Matrix{et}, (ir, ic), 24) # input genotype matrix
     open(oxy, "w+") do io
-        write(io, Ref(hdr))
-        usnp = Mmap.mmap(io, Matrix{UInt16}, (rs, cs), 24)
-        if LociMajored # then count row by row
-            for i in 1:rs
-                x::UInt16, y::UInt16 = 0, 1
-                for j in 1:cs
-                    if gt[i, j] == 0
-                        usnp[i, j] = x
-                        x += 2
-                    else
-                        usnp[i, j] = y
-                        y += 2
-                    end
-                end
+        write(io, Ref(ohdr))
+        usnp = Mmap.mmap(io, Matrix{UInt16}, (or, oc), 24)
+        if LociMajored && mj == cc
+            for i in 1:or
+                codesnp(view(gt, i, :), view(usnp, i, :))
             end
-        else
-            for i in 1:cs
-                x::UInt16, y::UInt16 = 0, 1
-                for j in 1:rs
-                    if gt[j, i] == 0
-                        usnp[j, i] = x
-                        x += 2
-                    else
-                        usnp[j, i] = y
-                        y += 2
-                    end
-                end
+        elseif !LociMajored && mj == cc
+            for i in 1:oc
+                codesnp(gt[:, i], usnp[:, i])
             end
         end
         Mmap.sync!(usnp)
     end
     bar
+end
+
+"""
+    function transxy(ixy::AbstractString, oxy::AbstractString)
+Transpose `ixy` of `XY` format and write the results to `oxy`.
+"""
+function transxy(ixy::AbstractString, oxy::AbstractString)
+    (isfile(ixy)) || error("File $ixy doesn't exist")
+    ihdr = readhdr(ixy)
+    mt, et, mj, ir, ic = xyhdr(ihdr)
+    mj == 1 ? (mj = 0) : (mj == 0 && (mj = 1))
+    ohdr = xyheader('X', 'Y', ' ', mt, mj, ihdr.e, '\n', '\n', ic, ir)
+    imat = Mmap.mmap(ixy, Matrix{et}, (ir, ic), 24)
+    open(oxy, "w+") do io
+        write(io, Ref(ohdr))
+        write(io, imat')
+    end
+    nothing
 end
