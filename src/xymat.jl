@@ -197,48 +197,48 @@ function writebed(bed, mat)
 end
 
 """
-    function sampleHap(ixy::AbstractString, imp::AbstractString; nhp = 0, nlc = 0, dir = "", LociMajor = true)
-Sample `nlc` loci and `nhp` haplotypes from genotype file `ixy`, 
-and the `nlc` from linkage map file `imp`. The results are written 
-to a new file with a random name in the same directory of `ixy`, or as specified in `dir`.
-If `nhp` or `nlc` is zero, sample all haplotypes, or ID.
-The sampled genotypes are `LociMajored`` for ease of dropping in breeding simulation.
+    function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp; nlc=50_000, nqtl=5_000, dir="")
+Sample founder genotypes from base haplotypes in `ixy` and `imp`.
+Write the results into 3 files, the genotype file, the map file and 
+a binary file indicate which loci are QTLs, and which loci are chip SNP.
 """
-function sampleHap(ixy::AbstractString, imp::AbstractString;
-                   nhp = 0, nlc = 0, dir = "", LociMajor = true)
+function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
+    nlc=50_000, nqtl=5_000, dir="")
     # Prepare files
     (isfile(ixy) && isfile(imp)) || error("File $ixy or $imp doesn't exist")
-    iseven(nhp) || error("Number of haplotypes must be even")
+    iseven(nhp) || error("Number of haplotypes $nhp must be even")
     dir == "" && (dir = dirname(ixy))
     bar = randstring(6)
-    oxy, omp = joinpath.(dir, bar .* ["-hap.xy", "-map.ser"])
+    oxy, omp, oqtl = joinpath.(dir, bar .* ["-hap.xy", "-map.ser", "-qtl.bin"])
 
-    # The sampling on ID and loci
+    # Parameter check
     ihdr = readhdr(ixy)
     mt, et, mj, rs, cs = xyhdr(ihdr)
-    mj ∈ (0, 1) || error("Not a haplotype file") # must be loci- or ID-majored
-    tlc, thp = (mj == 0) ? (rs, cs) : (cs, rs)
-    nhp = (0 < nhp < thp) ? nhp : thp
-    nlc = (0 < nlc < tlc) ? nlc : tlc
-    slc = sort(shuffle(1:tlc)[1:nlc]) # sampled loci must be sorted
-    shp = shuffle(1:thp)[1:nhp] # sampled haplotypes always have diff. orders
+    mj ∈ (0, 1) || error("Not a haplotype file: $mj")
+    tlc, thp = (mj == 1) ? (cs, rs) : (rs, cs)
+    # to make simpler codes
+    ((0 < nlc ≤ tlc) && (0 < nhp ≤ thp) && (0 ≤ nqtl < tlc) && (iseven(nhp))) ||
+        error("Parameter nlc($nlc), nhp($nhp), or nqtl($nqtl) not right for tlc($tlc), and thp($thp)")
+ 
+    # Sample loci
+    lqtl = sort(shuffle(1:tlc)[1:nqtl])
+    slc = sort(shuffle(1:tlc)[1:nlc])
+    shp = sort(shuffle(1:thp)[1:nhp])
+    flc = sort(unique([lqtl; slc])) # final sampled loci
+    si = map(x -> x ∈ slc, flc)
+    qi = map(x -> x ∈ lqtl, flc)
+    write(oqtl, Int8.([si; qi]))
 
-    # The sampled linkage map
+    # sampled linkage map
     mmp = deserialize(imp)
-    serialize(omp, mmp[slc, :])
+    serialize(omp, mmp[flc, :])
 
-    # The sampled genotype
-    open(oxy, "w") do io
+    # sampled genotypes
+    open(oxy, "w") do io # always write loci majored
         igt = (mj == 0) ? Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24) : Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24)'
-        if LociMajor
-            ohdr = xyheader('X', 'Y', ' ', mt, 0, ihdr.e, '\n', '\n', nlc, nhp)
-            write(io, Ref(ohdr))
-            write(io, igt[slc, shp])
-        else
-            ohdr = xyheader('X', 'Y', ' ', mt, 1, ihdr.e, '\n', '\n', nhp, nlc)
-            write(io, Ref(ohdr))
-            write(io, igt[slc, shp]')
-        end
+        ohdr = xyheader('X', 'Y', ' ', mt, 0, ihdr.e, '\n', '\n', nlc, nhp)
+        write(io, Ref(ohdr))
+        write(io, igt[flc, shp])
     end
     bar
 end
@@ -321,4 +321,24 @@ function transxy(ixy::AbstractString, oxy::AbstractString)
         write(io, imat')
     end
     nothing
+end
+
+"""
+    function xymap(xy)
+Simply map the matrix part to a matrix for reading. 
+This only applies to a `F` matrix.
+"""
+function xymap(xy)
+    hdr = readhdr(xy)
+    mt, et, mj, ir, ic = xyhdr(hdr)
+    mt == 'F' || error("Only support F matrix")
+    Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
+end
+
+"""
+    function xymap(xy, r1, r2)
+return a mapped matrix of range `r1` and `r2` of `xy`.
+"""
+function xymap(xy, r1, r2)
+    @info "Under development"
 end

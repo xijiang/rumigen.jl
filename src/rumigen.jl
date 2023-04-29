@@ -1,5 +1,6 @@
 module rumigen
 
+using BenchmarkTools
 using DataFrames
 using Distributions
 using LinearAlgebra
@@ -15,6 +16,6 @@ include("xymat.jl")
 include("simulation.jl")
 include("term.jl")
 include("mate.jl")
-include("xps.jl")
+include("app/xps.jl")
 
 end # module rumigen
