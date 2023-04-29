@@ -1,38 +1,37 @@
 """
-    function randomMate(nsire::Int, ndam::Int)
+    function randomMate(nsire::Int, ndam::Int; noff = 0)
 Random pair sire `1:nsire` and dam `nsire+1:nsire+ndam-1`.
 Returns a sorted two-column matrix, `[sires dams]`.
+If `noff` is given, it is the number of offspring to be generated.
 """
-function randomMate(nsire::Int, ndam::Int)
-    nf = max(nsire, ndam)
-    ma = shuffle(1:ndam)
-    while length(ma) < nf
+function randomMate(nsir::Int, ndam::Int; noff = 0)
+    noff == 0 && (noff = max(nsir, ndam))
+    pa, ma = shuffle(1:nsir), shuffle(1:ndam)
+    while length(pa) < noff
+        append!(pa, shuffle(1:nsir))
+    end
+    while length(ma) < noff
         append!(ma, shuffle(1:ndam))
     end
-    pa = collect(1:nsire)
-    while length(pa) < nf
-        append!(pa, shuffle(1:nsire))
-    end
-    sortslices([pa[1:nf] ma[1:nf] .+ nsire], dims=1, by=x -> (x[1], x[2]))
+    sortslices([pa[1:noff] ma[1:noff] .+ nsir], dims=1, by=x -> (x[1], x[2]))
 end
 
 """
-    function randomMate(sires, dams)
+    function randomMate(sires, dams; noff = 0)
 Given names listed in `sires` and `dams`, this function randomly match
 them, such that every ID is used as much as possible.  Returns a
 sorted two columns name matrix.
 """
-function randomMate(sires, dams)
-    nf = max(length(sires), length(dams))
-    ma = shuffle(dams)
-    while length(ma) < nf
-        append!(ma, shuffle(dams))
-    end
-    pa = shuffle(sires)
-    while length(pa) < nf
+function randomMate(sires, dams; noff = 0)
+    noff == 0 && (noff = max(length(sires), length(dams)))
+    pa, ma = shuffle(sires), shuffle(dams)
+    while length(pa) < noff
         append!(pa, shuffle(sires))
     end
-    sortslices([pa[1:nf] ma[1:nf]], dims=1, by=x -> (x[1], x[2]))
+    while length(ma) < noff
+        append!(ma, shuffle(dams))
+    end
+    sortslices([pa[1:noff] ma[1:noff]], dims=1, by=x -> (x[1], x[2]))
 end
 
 """
@@ -140,6 +139,28 @@ function drop(pg::AbstractArray, og::AbstractArray, pm, lms)
         zi = vec(view(og, :, 2id))
         gamete(ma, zi, lms)
     end
+end
+
+"""
+    function drop(fra::AbstractString, til::AbstractString, pm, lms)
+Drop haplotypes from haplotypes in file `fra` of xy format, into 
+another xy file `til`, according to sire and dam info in `pm` and 
+linkage summary `lms`.
+"""
+function drop(fra::AbstractString, til::AbstractString, pm, lms)
+    ihdr = readhdr(fra)
+    mt, et, mj, ir, ic = xyhdr(ihdr)
+    mt == 'F' || error("Only support F matrix")
+    pg = Mmap.mmap(fra, Matrix{et}, (ir, ic), 24)
+    noff = size(pm, 1)
+    open(til, "w") do io
+        ohdr = xyheader('X','Y',' ',mt,mj,ihdr.e,'\n','\n',ir,2noff)
+        write(io, Ref(ohdr))
+        og = zeros(et, ir, noff * 2)
+        drop(pg, og, pm, lms)
+        write(io, og)
+    end
+    nothing
 end
 
 """

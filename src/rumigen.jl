@@ -16,6 +16,7 @@ include("xymat.jl")
 include("simulation.jl")
 include("term.jl")
 include("mate.jl")
+include("util.jl")
 include("app/xps.jl")
 
 end # module rumigen

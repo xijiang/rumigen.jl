@@ -49,7 +49,7 @@ Inbreeding, $\Delta G$, gene loss are recorded.
    3. [x] Sample 50k SNPs, and 1000 pairs of haplotypes from the base population.
       - sample 10k QTL, then
       - sample 50k SNPs from the 19M total SNPs
-   4. [ ] Mate 500 sires and 500 dams to produce 10,500 offspring, totally random not full sib of 21.
+   4. [x] Mate 500 sires and 500 dams to produce 10,500 offspring, totally random not full sib of 21.
       - expand to 10,500 offspring
       - 500 $\to$ 50 sires.
         - no selection on cows.
@@ -83,17 +83,17 @@ The algorithm
 - [x] MaCS $\to$ Founder, or 2000 haplotypes
 - [ ] The $F_0$ generation
   - [x] Sample haplopypes from the founder $\to$ 1000 pairs, for 500♂ and 500♀
-  - [x] Sample 50k SNPs and 5k QTL from the 19M total SNPs
-  - [ ] Random (totally) mate 500♂ and 500♀ to produce 10,500 offspring
+  - [x] Sample 50k SNPs and 10k QTL from the 19M total SNPs
+  - [x] Random (totally) mate 500♂ and 500♀ to produce 10,500 offspring
     - where, 500 are ♂, 10,000 are ♀
-    - [ ] decide the parents
-    - [ ] mate founders and produce $F_0$
+    - [x] decide the parents
+    - [x] mate founders and produce $F_0$
 - [ ] Selection methods
   - [ ] Phenotypic selection
   - [ ] BLUP
   - [ ] Genomic selection
 - [ ] Selection strategy
-  - [ ] Sample QTL and SNP separately from 19M founder SNP
+  - [x] Sample QTL and SNP separately from 19M founder SNP
   - [ ] Select 50 ♂ from 500 ♂
   - [ ] Select 500 ♀ from 10,000 ♀ as the mother of sires of the next generation
   - [ ] Random mate 50 ♂ and 1000 ♀ to produce 500 ♂ as the sires candidates of the next generation

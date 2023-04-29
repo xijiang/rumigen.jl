@@ -209,12 +209,12 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
     iseven(nhp) || error("Number of haplotypes $nhp must be even")
     dir == "" && (dir = dirname(ixy))
     bar = randstring(6)
-    oxy, omp, oqtl = joinpath.(dir, bar .* ["-hap.xy", "-map.ser", "-qtl.bin"])
+    oxy, omp = joinpath.(dir, bar .* ["-hap.xy", "-map.ser"])
 
     # Parameter check
     ihdr = readhdr(ixy)
     mt, et, mj, rs, cs = xyhdr(ihdr)
-    mj ∈ (0, 1) || error("Not a haplotype file: $mj")
+    (mt == 'F' && mj ∈ (0, 1)) || error("Not a haplotype file: $mj")
     tlc, thp = (mj == 1) ? (cs, rs) : (rs, cs)
     # to make simpler codes
     ((0 < nlc ≤ tlc) && (0 < nhp ≤ thp) && (0 ≤ nqtl < tlc) && (iseven(nhp))) ||
@@ -225,18 +225,18 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
     slc = sort(shuffle(1:tlc)[1:nlc])
     shp = sort(shuffle(1:thp)[1:nhp])
     flc = sort(unique([lqtl; slc])) # final sampled loci
-    si = map(x -> x ∈ slc, flc)
-    qi = map(x -> x ∈ lqtl, flc)
-    write(oqtl, Int8.([si; qi]))
 
     # sampled linkage map
-    mmp = deserialize(imp)
-    serialize(omp, mmp[flc, :])
+    imp = deserialize(imp)
+    mmp = imp[flc, :]
+    mmp.chip = map(x -> x ∈ slc, flc)
+    mmp.qtl = map(x -> x ∈ lqtl, flc)
+    serialize(omp, select(mmp, [:chr, :pos, :chip, :qtl]))
 
     # sampled genotypes
     open(oxy, "w") do io # always write loci majored
         igt = (mj == 0) ? Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24) : Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24)'
-        ohdr = xyheader('X', 'Y', ' ', mt, 0, ihdr.e, '\n', '\n', nlc, nhp)
+        ohdr = xyheader('X', 'Y', ' ', mt, 0, ihdr.e, '\n', '\n', length(flc), nhp)
         write(io, Ref(ohdr))
         write(io, igt[flc, shp])
     end
@@ -321,24 +321,4 @@ function transxy(ixy::AbstractString, oxy::AbstractString)
         write(io, imat')
     end
     nothing
-end
-
-"""
-    function xymap(xy)
-Simply map the matrix part to a matrix for reading. 
-This only applies to a `F` matrix.
-"""
-function xymap(xy)
-    hdr = readhdr(xy)
-    mt, et, mj, ir, ic = xyhdr(hdr)
-    mt == 'F' || error("Only support F matrix")
-    Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
-end
-
-"""
-    function xymap(xy, r1, r2)
-return a mapped matrix of range `r1` and `r2` of `xy`.
-"""
-function xymap(xy, r1, r2)
-    @info "Under development"
 end
