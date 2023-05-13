@@ -6,7 +6,8 @@
 
 BLUP is better in short term selection.
 But for long term selection, phenotypic selection is better.
-Also, more genes are lost (for gs, quinton didn't simulate genotypes) and inbreeding increases faster with BLUP.
+Also, more genes are lost (for GS, quinton didn't simulate genotypes) 
+and inbreeding increases faster with BLUP.
 Genomic selection (GS) has similar problems, at least in theory.
 
 This simulation is to repeat Quinton et al., 1991.
@@ -23,6 +24,32 @@ Dams for the next generation are selected from all the offspring.
 
 Selections are done with phenotypic values and EBV from BLUP and GS.
 Inbreeding, $\Delta G$, gene loss are recorded.
+
+### A cattle selection scheme
+
+```mermaid
+flowchart TD
+  A[[Sires: 500]]
+  B[[Dams: 10,000]]
+  SS(Sires of sires)
+  DS(Dams of sires)
+  M1((X))
+  M2((X))
+  subgraph The population
+    A --> |Top 30, or 100%| M2
+    B --> |10%| M2
+    M2 --> |Replacement| B
+  end
+  subgraph Selection
+    DS ==> M1
+    A ==> |Top 30| SS
+    SS ==> M1
+    M1 ==> |Replacement| A
+    B ==> |5%| DS
+  end
+```
+
+A similar selection scheme is simulated for pigs.
 
 ## Progress
 
@@ -62,23 +89,27 @@ Inbreeding, $\Delta G$, gene loss are recorded.
       - odd for SNP allele 1, even for 0.
       - Can code at least $2^{14} = 16,384$ ID, or 32,768 haplotypes.
 2. Selection simulation
-   1. [ ] Selection with genomic selection, SNP-BLUP
+   1. [x] Selection with genomic selection, SNP-BLUP
       - for 10 generations.
       - add mutations? 50-60 per ID per generation.
       - a QTL can be a mutation on the 5k genes.
       - may have 10k genes.
-   2. [ ] Selection with BLUP
+   2. [x] Selection with BLUP
    3. [ ] Selection with phenotypic values
+   4. [ ] repeat quinton's scheme as a starter
+   5. [ ] early progress on Friday.
 
 ## ToDo
 
 1. [ ] Calculate LD to verify the sampling.
 2. [ ] Make the `mate` function work.
 3. [ ] Rich `test` sets for critical functions.
+4. [ ] several slides for report with simple results
 
 ## Focus
 
 The algorithm
+$$\left\{\begin{array}{c} n = 30\\ f = 5\%\end{array}\right.$$
 
 - [x] MaCS $\to$ Founder, or 2000 haplotypes
 - [ ] The $F_0$ generation
@@ -89,16 +120,45 @@ The algorithm
     - [x] decide the parents
     - [x] mate founders and produce $F_0$
 - [ ] Selection methods
-  - [ ] Phenotypic selection
-  - [ ] BLUP
-  - [ ] Genomic selection
+  - [ ] *Phenotypic selection*
+  - [ ] PBLUP
+  - [x] Genomic selection
 - [ ] Selection strategy
   - [x] Sample QTL and SNP separately from 19M founder SNP
-  - [ ] Select 50 ♂ from 500 ♂
-  - [ ] Select 500 ♀ from 10,000 ♀ as the mother of sires of the next generation
-  - [ ] Random mate 50 ♂ and 1000 ♀ to produce 500 ♂ as the sires candidates of the next generation
-  - [ ] Random mate 50 ♂ and 10000 ♀ to produce 10000 ♀ as the dams candidates of the next generation
+  - [ ] Select $n$ ♂ from 500 ♂
+  - [ ] Select $f$ ♀ from 10,000 ♀ as the mother of sires of the next generation
 
 !!! note
     The simulation is still in debugging stage.
     No result yet.
+
+## Simulation scheme from Quinton et al., 1992
+
+- 50 sires and 50 dams
+- 2 males and 2 females per family
+- $h^2 = 0.05, 0.1, 0.25, 0.5$, I use 0.25 here.
+- 10 generations
+- Select 1, 2:2:40 sires out of 100 sons, I use only 10 here
+- Select 50 out of 100 daughters
+
+```mermaid
+graph TD
+  
+  Sires[50 sires] --> T(F0 fullsib: 2 sons + 2 daughters each)
+  Dams(50 dams) --> T
+  T --> Off[100 sons and 100 daughters]
+  Off --> |Mass, Ped, or GS| S1[10 selected sires]
+  Off --> |Mass, Ped, or GS| D1[50 Selected dams]
+  S1 --> T2(F1-10 fullsib: 2 sons + 2 daughers each)
+  D1 --> T2
+  T2 ==> Off
+```
+
+### Added scenarios GS
+
+- 50k SNPs, 10k QTL
+- Alternative $\sigma_a^2 = 1$, $\sigma_e^2 = 3$, $\Rightarrow h^2 = 0.25$.
+  - Instead of $\sigma_p^2=1$
+- Full pedigree and genotypes from generation -1 to 10
+- Using IBD for inbreeding calculation
+- Alternative: random mating $F_{-1}$ to produce 200 $F_0$

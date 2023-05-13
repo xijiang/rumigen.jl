@@ -57,6 +57,7 @@ end
 """
     function simQTL(xy::AbstractString, mmp::AbstractString)
 Sample QTL effects from genotypes in `xy` and QTL indice in `mmp`.
+The genotypes must be of `Int8` type.
 """
 function simQTL(xy::AbstractString, mmp::AbstractString; d = Laplace())
     imp = deserialize(mmp)

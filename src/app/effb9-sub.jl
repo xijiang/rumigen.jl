@@ -6,8 +6,8 @@ function base_effb9(nsir, ndam, rst)
     tprintln("Generating a base population with MaCS")
     macs = make_macs(tdir = rst)
     nid = nsir + ndam
-    cattle_genome(macs, nid, dir = "$rst/base")
-    macs2xy("$rst/base")
+    tmp = cattle_genome(macs, nid, dir = "$rst/base")
+    macs2xy(tmp)
 end
 
 """
@@ -26,18 +26,35 @@ function f0_effb9(dir, bar, nsir, ndam, nbull, ncow)
     @info "Mate founders to generate the first generation"
     lmp = deserialize("$dir/$bar-map.ser")
     lms = sumMap(lmp)
-    prt = randomMate(nsir, ndam, noff = nbull + ncow) # parents of 10,500 calves
+    prt = randomMate(nsir, ndam, noff = nbull + ncow)
     drop("$dir/$bar-hap.xy", "$dir/$bar-f0.xy", prt, lms)
     uniqSNP("$dir/$bar-f0.xy")
+    cp("$dir/$bar-uhp.xy", "$dir/$bar-pht.xy", force = true)
+    cp("$dir/$bar-uhp.xy", "$dir/$bar-ped.xy", force = true)
+    mv("$dir/$bar-uhp.xy", "$dir/$bar--gs.xy", force = true)
 end
 
-function cmn_effb9(dir, bar)
-    # Genotypes of F0, the starting point for downstream selection
-    f0, oo = "$dir/$bar-uhp.xy", "$dir/$bar"
-    isfile(f0) || error("$f0 doesn't exist")
-    cp(f0, "$oo-pht.xy")
-    cp(f0, "$oo-ped.xy")
-    mv(f0, "$oo-gs.xy")
-    #ToDo: Create a pedigree file with ID, Pa, Ma, TBV, phenotype
-    # and make two copies of it.
+"""
+    function ped_effb9(dir, bar, σₑ)
+Create a pedigree file for the first generation. Calculate the TBV and phenotypes.
+"""
+function ped_effb9(dir, bar, σₑ)
+    lmp = deserialize("$dir/$bar-map.ser")
+    nid = begin
+        tmp = zeros(Int, 3)
+        read!("$dir/$bar--gs.xy",tmp)
+        tmp[3] ÷ 2
+    end
+
+    tbv, pht = xy2gp("$dir/$bar--gs.xy", 1:nid, lmp, σₑ)
+    sex = repeat([1, 1, 0, 0], outer = nid ÷ 4)
+    ped = DataFrame(id = 1:nid, pa = 0, ma = 0, sex = sex, grt = 0,
+                    tbv = tbv, pht = pht, ebv = 0., F = 0.)
+    serialize("$dir/$bar-f0-ped.ser", ped)
+    nothing
 end
+
+function sum_effb9()
+    @info "Under construction"
+end
+

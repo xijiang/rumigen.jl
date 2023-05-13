@@ -322,3 +322,34 @@ function transxy(ixy::AbstractString, oxy::AbstractString)
     end
     nothing
 end
+
+"""
+    function xy2gp(ixy::AbstractString, ids, loc, σₑ)
+Generate TBV and phenotypes of `ids` in `ixy`, with loci info and σₑ.
+- `ixy` is the filename of xy format of haplotypes, loci majored,
+- `ids` specifies the ID to be phenotyped,
+- `loc` is a DataFrame, specifies the QTL, markers and their effects,
+- `σₑ` specify the residual standard error.
+"""
+function xy2gp(ixy::AbstractString, ids, loc, σₑ)
+    isfile(ixy) || error("File $ixy doesn't exist")
+    ihdr = readhdr(ixy)
+    _, et, mj, ir, ic = xyhdr(ihdr)
+    mj == 0 || error("Only support loci majored xy format")
+    nlc, nid = nrow(loc), length(ids)
+    (nlc ≤ ir && nid ≤ ic ÷ 2) || error("Too many loci or IDs")
+    hap = Mmap.mmap(ixy, Matrix{et}, (ir, ic), 24)
+    uhp2gp(hap, loc, σₑ)
+end
+
+function appendxy(xy::AbstractString, mat::AbstractArray)
+    hdr = readhdr(xy)
+    mt, et, _, ir, ic = xyhdr(hdr)
+    jr, jc = size(mat)
+    (mt == 'F' && et == eltype(mat) && ir == jr) || error("Incompatible matrix")
+    open(xy, "a+") do io
+        write(io, mat)
+        seek(io, 16)
+        write(io, [ic + jc])
+    end
+end
