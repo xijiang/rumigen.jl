@@ -27,27 +27,31 @@ A simple selection strategy.
     - If `ebv = true`, selection is on `:ebv`.
     - If `gs = true`, `:ebv` is of GEBV
     - By default, `:ebv` is of PEBV if to be calculated.
+- `h²` is calculated as `σₐ = 1`.
 """
 function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs = false)
-    hdr = readhdr(xy)
+    hdr, h² = readhdr(xy), 1 / (1 + σₑ^2)
     mt, et, mj, nr, nc = xyhdr(hdr)
     (mt == 'F' && mj == 0 && nc == 2nrow(ped)) || error("$xy, or pedigree not right")
     lms, nfam = sumMap(lmp), max(nsir, ndam)
     nsib = sum(ped.grt .== ped.grt[end]) ÷ nfam
     sibs = [ones(Int, nsib ÷ 2); zeros(Int, nsib - nsib ÷ 2)]
-    @info "Mass selection on $xy, for $ngrt generations"
+    @info "Selection on $xy, for $ngrt generations"
 
     for igrt in 1:ngrt
         print(" $igrt")
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
         ogt = zeros(et, nr, nfam * nsib * 2)
-        if ebv
-            if gs  # GEBV
+        pm = if ebv
+            giv = if gs  # GEBV
+                grmiv(xy, lmp.chip)
             else   # PEBV
+                A⁻¹(ped)
             end
-            pm = repeat(pedng(ped, :ebv, nsir, ndam), outer = nsib)
+            simpleBLUP(ped, giv, h²)
+            repeat(pedng(ped, :ebv, nsir, ndam), outer = nsib)
         else
-            pm = repeat(pedng(ped, :pht, nsir, ndam), outer = nsib)
+            repeat(pedng(ped, :pht, nsir, ndam), outer = nsib)
         end
         drop(agt, ogt, pm, lms)
         appendxy(xy, ogt)

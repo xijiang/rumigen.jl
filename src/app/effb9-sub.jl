@@ -54,7 +54,74 @@ function ped_effb9(dir, bar, σₑ)
     nothing
 end
 
-function sum_effb9()
-    @info "Under construction"
+"""
+    function sum_effb9(dir, bar)
+Calculate mean `tbv`, `F`, of each generation, and number
+of fixed loci on chip and QTL in the end.
+"""
+function sum_effb9(dir, bar)
+    for sel in ["-gs", "pht", "ped"]
+        ped = deserialize("$dir/$bar-$sel+ped.ser")
+        lmp = deserialize("$dir/$bar-map.ser")
+        sp = combine(groupby(ped, :grt), :tbv => mean => :tbv, :F => mean => :F)
+        open("$dir/mbvf.bin", "a") do io
+            write(io, sp.tbv[2:end])
+            write(io, sp.F[2:end])
+        end
+        bgn = findfirst(x -> x == ped.grt[end], ped.grt)
+        hdr = readhdr("$dir/$bar-$sel.xy")
+        nlc, nhp = hdr.m, hdr.n
+        agt = Mmap.mmap("$dir/$bar-$sel.xy", Matrix{UInt16}, (nlc, nhp), 24)
+        lgt = view(agt, :, bgn:nhp) # last generation
+        snp = isodd.(lgt)
+        fixed = zeros(Int, 3)
+        for loc in eachrow(snp[lmp.chip, :])
+            length(unique(loc)) == 1 && (fixed[1] += 1)
+        end
+        for loc in eachrow(snp[lmp.qtl, :])
+            length(unique(loc)) == 1 && (fixed[2] += 1)
+        end
+        for loci in eachrow(snp)
+            length(unique(loci)) == 1 && (fixed[3] += 1)
+        end
+        open("$dir/fixed.bin", "a") do io
+            write(io, fixed)
+        end
+    end
 end
 
+function clean_effb9(rst, dir, bar)
+    rm.(glob("$rst/base/*"), recursive = true, force = true)
+    rm.(glob("$dir/$bar*"), recursive = true, force = true)
+end
+
+function stats_effb9(dir, ngrt)
+    nf = filesize("$dir/mbvf.bin") ÷ 8
+    ni = filesize("$dir/fixed.bin") ÷ 8
+    mbvf = reshape(Mmap.mmap("$dir/mbvf.bin", Vector{Float64}, nf), ngrt, :)
+    fixd = reshape(Mmap.mmap("$dir/fixed.bin", Vector{Int}, ni), 3, :)
+    mbv = zeros(ngrt, 3)
+    sbv = zeros(ngrt, 3)
+    mf = zeros(ngrt, 3)
+    sf = zeros(ngrt, 3)
+    mfx = zeros(3, 3)
+    sfx = zeros(3, 3)
+    for i in 1:3
+        mbv[:, i] = mean(mbvf[:, (2i-1):6:end], dims = 2)
+        sbv[:, i] =  std(mbvf[:, (2i-1):6:end], dims = 2)
+        mf[:, i] = mean(mbvf[:, 2i:6:end], dims = 2)
+        sf[:, i] =  std(mbvf[:, 2i:6:end], dims = 2)
+        mfx[i, :] = mean(fixd[:, i:3:end], dims = 2)
+        sfx[i, :] =  std(fixd[:, i:3:end], dims = 2)
+    end
+
+    #=
+    p1 = plot(mbv, label=["GS" "Phenotype" "Pedigree"])
+    p2 = plot(mf, label=["GS" "Phenotype" "Pedigree"])
+    p3 = plot(mbv ./ mf, label=["GS" "Phenotype" "Pedigree"])
+    p4 = plot(["Marker", "QTL", "SNP"], mfx, label=["GS" "Phenotype" "Pedigree"], legend=:right)
+    plot(p1, p2, p3, p4, dpi=300)
+    =#
+
+    mbv, sbv, mf, sf, mfx, sfx
+end

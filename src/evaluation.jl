@@ -1,4 +1,22 @@
-function pblup()
+"""
+    function simpleBLUP(ped, giv, h²)
+Calculate the BLUP of a trait with a pedigree, giv and a heritability.
+The pedigree should have a column `:grt` to be as fixed effects.
+This is a temporary dirty function for slides on May 17, 2023.
+
+This function can server both as GBLUP and PBLUP.
+"""
+function simpleBLUP(ped, giv, h²)
+    λ = (1.0 - h²) / h²
+    X = incidence_matrix(ped.grt)
+    Y = ped.pht
+    # Z = I here
+    lhs = [ X'X X'
+            X   I + λ * giv]
+    rhs = [X'Y; Y]
+    nf = size(X, 2)
+    ebv = (lhs \ rhs)[nf + 1 : end]
+    ped.ebv = ebv
 end
 
 """
@@ -26,7 +44,7 @@ function rrblup_mme(x, z, y, h²; dd = 0.01, norm = false)
     nf = size(x, 2)
     nb = nf + nlc           # total number of factors (fixed + random)
 
-    mem = Aux.memavail() * 99 ÷ 100 # not all available memory
+    mem = memavail() * 99 ÷ 100 # not all available memory
     mlh = nb^2 * 8                  # memory for LHS
     mem < mlh && error("Not enough memory for this calculation: $(mem/1024^3)G < $(mlh/1024^3)G")
 
