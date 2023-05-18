@@ -1,4 +1,4 @@
-# Repeat Quinton et al., 1991, with genomic selection
+# Repeat Quinton et al., 1992, with genomic selection
 
 <!-- `echo Repeat Quinton et al., 1991, with genomic selection | md5sum` => effb94... -->
 
@@ -95,9 +95,9 @@ A similar selection scheme is simulated for pigs.
       - a QTL can be a mutation on the 5k genes.
       - may have 10k genes.
    2. [x] Selection with BLUP
-   3. [ ] Selection with phenotypic values
-   4. [ ] repeat quinton's scheme as a starter
-   5. [ ] early progress on Friday.
+   3. [x] Selection with phenotypic values
+   4. [x] repeat quinton's scheme as a starter
+   5. [x] early progress on Friday.
 
 ## ToDo
 
@@ -120,13 +120,13 @@ $$\left\{\begin{array}{c} n = 30\\ f = 5\%\end{array}\right.$$
     - [x] decide the parents
     - [x] mate founders and produce $F_0$
 - [ ] Selection methods
-  - [ ] *Phenotypic selection*
-  - [ ] PBLUP
+  - [x] *Phenotypic selection*
+  - [x] PBLUP
   - [x] Genomic selection
-- [ ] Selection strategy
+- [x] Selection strategy
   - [x] Sample QTL and SNP separately from 19M founder SNP
-  - [ ] Select $n$ ♂ from 500 ♂
-  - [ ] Select $f$ ♀ from 10,000 ♀ as the mother of sires of the next generation
+  - [x] Select $n$ ♂ from 500 ♂
+  - [x] Select $f$ ♀ from 10,000 ♀ as the mother of sires of the next generation
 
 !!! note
     The simulation is still in debugging stage.
@@ -162,3 +162,17 @@ graph TD
 - Full pedigree and genotypes from generation -1 to 10
 - Using IBD for inbreeding calculation
 - Alternative: random mating $F_{-1}$ to produce 200 $F_0$
+
+![](./figures/q.png)
+
+### Action points
+- Scenarios
+  - [x] more generations, 20.
+  - [x] twice sires, 20
+  - [ ] run a scheme with sire phenotypes, only to compare gs and ped.
+- Report
+  - [ ] positive qtl lost
+    - [ ] my: potents, e.g., sum of the positive QTL
+    - [ ] using proportions lost
+  - [ ] plot $\Delta G$ against inbreeding
+  - [ ] add x, y labels to the plots

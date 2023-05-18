@@ -24,9 +24,9 @@ function xps_effb9(; describe=true, debug=true)
         @warn "Debugging"
     else
         describe && tprintln(Term.parse_md(read("docs/effb9.md", String)))
+        foo = base_effb9(nsir, ndam, rst)                     # ==> base
         for irpt in 1:nrpt
             @info "Repeat $irpt of $nrpt"
-            foo = base_effb9(nsir, ndam, rst)                     # ==> base
             bar = fdr_effb9(rst, dir, foo, nsir, ndam, nlc, nqtl) # ==> founder
             f0_effb9(dir, bar, nsir, ndam, nbull, ncow)           # ==> f0 of UInt16 in 3 copies
             simQTL("$dir/$bar-f0.xy", "$dir/$bar-map.ser", d = Normal())
@@ -39,7 +39,7 @@ function xps_effb9(; describe=true, debug=true)
             ped = deserialize("$dir/$bar-f0-ped.ser")
             simpleSelection("$dir/$bar--gs.xy", ped, lmp, ns, nd, ngrt, σₑ, ebv = true, gs = true)
             sum_effb9(dir, bar)
-            clean_effb9(rst, dir, bar)
+            rm("$dir/$bar-*")
         end
     end
 end

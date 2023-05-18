@@ -78,3 +78,35 @@ function simQTL(xy::AbstractString, mmp::AbstractString; d = Laplace())
     end
     serialize(mmp, imp)
 end
+
+"""
+    function initPedigree(xy, lmp, σₑ)
+Initialize a pedigree from genotypes in `xy`, and QTL information in `lmp`.
+The pedigree returned is a DataFrame with column:
+- `id`: ID of the individual
+- `pa`: sire of the ID, default 0
+- `ma`: dam of the ID, default 0
+- `sex`: randomly assigned
+- `grt`: generation of the ID, default 0
+- `tbv`: true breeding value of the ID
+- `pht`: phenotype of the ID, which allows missing
+- `ebv`: estimated breeding value of the ID, default 0
+- `F`: inbreeding coefficient of the ID, default 0
+"""
+function initPedigree(xy, lmp, σₑ)
+    (:qtl ∈ propertynames(lmp) && :efct ∈ propertynames(lmp)) || error("No QTL column in $lmp")
+    hdr = readhdr(xy)
+    mt, _, mj, ir, ic = xyhdr(hdr)
+    (mt == 'F' && mj == 0) || error("Not a proper input $xy")
+    nid = ic ÷ 2
+    tbv, pht = xy2gp(xy, 1:nid, lmp, σₑ)
+    DataFrame(id = 1:nid,
+              pa = 0,
+              ma = 0,
+              sex = rand(0:1, nid),
+              grt = 0,
+              tbv = tbv,
+              pht = allowmissing(pht),
+              ebv = 0.,
+              F = 0.)
+end

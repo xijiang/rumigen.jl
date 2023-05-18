@@ -13,6 +13,26 @@ function incidence_matrix(levels::AbstractVector)
 end
 
 """
+    incidence_matrix(df::DataFrame)
+Create an incidence matrix from all columns of a data frame provided.
+The first level of each factor is ignored. Instead, a intercept is added.
+This is to make the matrix full rank.
+"""
+function incidence_matrix(df::DataFrame)
+    n = nrow(df)
+    u = [sort(unique(df[:, i]))[2:end] for i in 1:ncol(df)] # can also be 1:end-1, which has more codes than 2:end
+    m = sum([length(u[i]) for i in 1:length(u)]) + 1
+    x, a = [ones(n) zeros(n, m)], 2
+    for i in 1:length(u)
+        for j in 1:length(u[i])
+            x[df[:, i] .== u[i][j], a] .= 1
+            a += 1
+        end
+    end
+    sparse(x)
+end
+
+"""
 Return the size of available memory on a Linux alike system.
 Or, the free memory size is returned.
 """
@@ -38,4 +58,11 @@ function blksz(n::Int, m::Int)
         ng = Int(ceil(n / m))
         n % ng == 0 ? n ÷ ng : n ÷ ng + 1
     end
+end
+
+# R, C, V: row, column and value specifying values in a sparse matrix
+function pushRCV!(R, C, V, r, c, v)
+    push!(R, r)
+    push!(C, c)
+    push!(V, v)
 end

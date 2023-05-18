@@ -48,7 +48,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs 
             else   # PEBV
                 A⁻¹(ped)
             end
-            simpleBLUP(ped, giv, h²)
+            animalModel(ped, giv, h²) # default using :grt as fixed effect
             repeat(pedng(ped, :ebv, nsir, ndam), outer = nsib)
         else
             repeat(pedng(ped, :pht, nsir, ndam), outer = nsib)

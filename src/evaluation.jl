@@ -19,6 +19,20 @@ function simpleBLUP(ped, giv, h²)
     ped.ebv = ebv
 end
 
+function animalModel(ped, giv, h²; fix = [:grt])
+    λ = (1.0 - h²) / h²
+    X = incidence_matrix(select(ped, fix))
+    nm = .!ismissing.(ped.pht)
+    Y = ped.pht[nm]
+    Z = zMatrix(nm)
+    lhs = [ X'X X'Z
+            Z'X Z'Z + λ * giv]
+    rhs = [X'Y; Z'Y]
+    nf = size(X, 2)
+    ebv = (lhs \ rhs)[nf + 1 : end]
+    ped.ebv = ebv
+end
+
 """
     function rrblup_mme(x, z, y, h²; dd = 0.01, norm = false)
 SNP effect calculation with rrBLUP and in MME way.
@@ -112,6 +126,10 @@ function inbreeding(xy, loci)
     F
 end
 
+"""
+    function uhp2gp(hp, loc, σₑ)
+Calculate TBV and phenotype from haplotypes.
+"""
 function uhp2gp(hp, loc, σₑ)
     nlc, nhp = size(hp)
     nid = nhp ÷ 2
@@ -120,4 +138,49 @@ function uhp2gp(hp, loc, σₑ)
     tbv = qg'loc.efct[loc.qtl]
     pht = tbv + randn(nid) * σₑ
     return tbv, pht
+end
+
+"""
+    function idealPop(xy, grt, lmp)
+Given a genotype file `xy`, generation info `grt` and a linkage map `lmp`, calculate
+the maximum level of an ideal population.
+"""
+function idealPop(xy, grt, lmp)
+    # requirement check
+    hdr = readhdr(xy)
+    mt, et, mj, ir, ic = xyhdr(hdr)
+    (mt == 'F' && mj == 0) || error("Not a proper file.")
+    ir == nrow(lmp) || error("Genotypes and linkage map don't match.")
+    ic == 2length(grt) || error("Genotypes and pedigree don't match.")
+    (et == Int8 || et == UInt16) || error("Not a proper genotype file.")
+    gt = if et == Int8
+        Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
+    else
+        Int8.(isodd.(Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)))
+    end
+    qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
+    efct = lmp.efct[lmp.qtl]
+    best = sum(efct[efct .> 0])
+    ideal, np, nn = Float64[], Int64[], Int64[]
+    for ig in sort(unique(grt))
+        iqg = qg[:, grt .== ig] # QTL genotypes of the ith generation
+        posi, plost, nlost = best, 0, 0
+        for (i, v) in enumerate(efct)
+            if v > 0
+                if all(iqg[i, :] .== 0)
+                    posi -= v
+                    plost += 1
+                end
+            else
+                if all(iqg[i, :] .== 1)
+                    posi += v
+                    nlost += 1
+                end
+            end
+        end
+        push!(ideal, posi)
+        push!(np, plost)    # number of positive loci lost
+        push!(nn, nlost)    # number of negative loci lost
+    end
+    ideal, np, nn
 end
