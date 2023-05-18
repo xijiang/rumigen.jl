@@ -58,7 +58,7 @@ function sum_effb9(dir, bar)
         open("$dir/mbvf.bin", "a") do io
             write(io, sp.tbv[2:end])
             write(io, sp.F[2:end])
-            ideal, plst, nlst = idealPop("$rst/$bar-$sel.xy", ped.grt, lmp)
+            ideal, plst, nlst = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
             write(io, ideal[2:end])
             write(io, plst[2:end])
             write(io, nlst[2:end])

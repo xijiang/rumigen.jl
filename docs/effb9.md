@@ -176,3 +176,5 @@ graph TD
     - [ ] using proportions lost
   - [ ] plot $\Delta G$ against inbreeding
   - [ ] add x, y labels to the plots
+
+*multiple factor incidence matrix function not right*

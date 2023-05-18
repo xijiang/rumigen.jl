@@ -12,8 +12,8 @@ A simulation to expand Quinton et al. 1991, with genomic selection.
 function xps_effb9(; describe = true, debug = true)
     # Parameters
     rst, nsir, ndam, nbull, ncow = "rst", 50, 50, 100, 100
-    nlc, nqtl, ngrt, h², σₐ = 50_000, 10_000, 20, 0.25, 1.0
-    ns, nd, nrpt = 20, 50, 100
+    nlc, nqtl, h², σₐ = 50_000, 10_000, 0.25, 1.0
+    ns, nd, ngrt, nrpt = 20, 50, 15, 100
     dir = "$rst/quinton"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
@@ -40,7 +40,7 @@ function xps_effb9(; describe = true, debug = true)
             ped = deserialize("$dir/$bar-f0-ped.ser")
             simpleSelection("$dir/$bar--gs.xy", ped, lmp, ns, nd, ngrt, σₑ, ebv = true, gs = true)
             sum_effb9(dir, bar)
-            rm("$dir/$bar-*")
+            rm.(glob("$dir/$bar-*"))
         end
     end
 end
