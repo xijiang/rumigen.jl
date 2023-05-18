@@ -9,7 +9,7 @@ This function can server both as GBLUP and PBLUP.
 function simpleBLUP(ped, giv, h²)
     λ = (1.0 - h²) / h²
     X = incidence_matrix(ped.grt)
-    Y = ped.pht
+    Y = collect(skipmissing(ped.pht))
     # Z = I here
     lhs = [ X'X X'
             X   I + λ * giv]
@@ -21,16 +21,17 @@ end
 
 function animalModel(ped, giv, h²; fix = [:grt])
     λ = (1.0 - h²) / h²
-    X = incidence_matrix(select(ped, fix))
-    nm = .!ismissing.(ped.pht)
-    Y = ped.pht[nm]
-    Z = zMatrix(nm)
-    lhs = [ X'X X'Z
-            Z'X Z'Z + λ * giv]
-    rhs = [X'Y; Z'Y]
+    #X = incidence_matrix(select(ped, fix))
+    X = incidence_matrix(ped.grt) # ToDo: fix above function
+    Z = zMatrix(.!ismissing.(ped.pht))
+    Y = collect(skipmissing(ped.pht))
+    lhs = Matrix([X'X X'Z
+                  Z'X Z'Z + λ * giv])
+    rhs = vec([X'Y; Z'Y])
     nf = size(X, 2)
-    ebv = (lhs \ rhs)[nf + 1 : end]
-    ped.ebv = ebv
+    #ebv = (lhs \ rhs)[nf + 1 : end]
+    LAPACK.posv!('U', lhs, rhs)
+    ped.ebv = rhs[nf + 1 : end]
 end
 
 """

@@ -33,6 +33,24 @@ function incidence_matrix(df::DataFrame)
 end
 
 """
+    function zMatrix(nm)
+Given a vector of `Bool`s indicating if a phenotype is not missing, return a
+`Z` sparse matrix.
+"""
+function zMatrix(nm)
+    n, m = length(nm), sum(nm)
+    z = sparse(zeros(m, n))
+    a = 1
+    for i in 1:n
+        if nm[i]
+            z[a, i] = 1
+            a += 1
+        end
+    end
+    z
+end
+
+"""
 Return the size of available memory on a Linux alike system.
 Or, the free memory size is returned.
 """
