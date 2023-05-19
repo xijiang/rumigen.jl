@@ -55,7 +55,7 @@ function sum_effb9(dir, bar)
         ped = deserialize("$dir/$bar-$sel+ped.ser")
         lmp = deserialize("$dir/$bar-map.ser")
         sp = combine(groupby(ped, :grt), :tbv => mean => :tbv, :F => mean => :F)
-        open("$dir/mbvf.bin", "a") do io
+        open("$dir/effb9.bin", "a") do io
             write(io, sp.tbv[2:end])
             write(io, sp.F[2:end])
             ideal, plst, nlst = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
@@ -66,5 +66,60 @@ function sum_effb9(dir, bar)
     end
 end
 
-function stats_effb9(dir, ngrt, nlc, nqtl)
+function stats_effb9(file, ngrt)
+    rst = Float64[]
+    open(file, "r") do io
+        a = zeros(3ngrt)
+        b = zeros(Int, 2ngrt)
+        while !eof(io)
+            read!(io, a)
+            read!(io, b)
+            append!(rst, a)
+            append!(rst, b)
+        end
+    end
+    rst = reshape(rst, ngrt, :)
+    return rst
+
+    #=
+    dg = rst[:, 1:5:end]
+    df = rst[:, 2:5:end]
+    bp = rst[:, 3:5:end]  # best possible population
+    dq = rst[:, 4:5:end]  # positive QTL lost
+    for i in 1:3:size(dg, 2)
+        dg[:, i:i+2] .-= dg[:, i+1]
+        df[:, i:i+2] .-= df[:, i+1]
+        bp[:, i:i+2] .-= bp[:, i+1]
+        dq[:, i:i+2] .-= dq[:, i+1]
+    end
+    mdg = [mean(dg[:, 1:3:end], dims = 2) mean(dg[:, 3:3:end], dims = 2)]
+    mdf = [mean(df[:, 1:3:end], dims = 2) mean(df[:, 3:3:end], dims = 2)]
+    mbp = [mean(bp[:, 1:3:end], dims = 2) mean(bp[:, 3:3:end], dims = 2)]
+    mdq = [mean(dq[:, 1:3:end], dims = 2) mean(dq[:, 3:3:end], dims = 2)]
+
+    sdg = [std(dg[:, 1:3:end], dims = 2) std(dg[:, 3:3:end], dims = 2)] ./ sqrt(200)
+    sdf = [std(df[:, 1:3:end], dims = 2) std(df[:, 3:3:end], dims = 2)] ./ sqrt(200)
+    sbp = [std(bp[:, 1:3:end], dims = 2) std(bp[:, 3:3:end], dims = 2)] ./ sqrt(200)
+    sdq = [std(dq[:, 1:3:end], dims = 2) std(dq[:, 3:3:end], dims = 2)] ./ sqrt(200)
+
+    gap = 50
+    plot( mean(rst[:,  1:15:end], dims=2), label="GS", xlabel="Generation", ylabel=L"\Delta G", dpi = 300, ribbon = sdg[:, 1], color=1, fillalpha = 0.2)
+    plot!(mean(rst[:,  3:15:end], dims=2) .-gap, label="max(GS) - $gap", ls=:dash, color=1)
+    plot!(mean(rst[:,  6:15:end], dims=2), label="Phenotype", color=2)
+    plot!(mean(rst[:,  8:15:end], dims=2) .-gap, label="max(phenotype) - $gap", ls=:dash, color=2, ribbon=std(rst[:, 8:15:end], dims=2) / sqrt(200), fillalpha = 0.2)
+    plot!(mean(rst[:, 11:15:end], dims=2), label="Pedigree", color=4, ribbon = sdg[:, 2], fillalpha = 0.2)
+    plot!(mean(rst[:, 13:15:end], dims=2) .-gap, label="max(pedigree) - $gap", ls=:dash, color=4, leg=:left)
+    savefig("effb9-dg.png") # yerror can be used instead of ribbon
+
+
+    plot( mean(rst[:,  2:15:end], dims=2), label="GS", xlabel="Generation", ylabel="Mean inbreeding")
+    plot!(mean(rst[:,  7:15:end], dims=2), label="Phenotype")
+    plot!(mean(rst[:, 12:15:end], dims=2), label="Pedigree", dpi = 300)
+    savefig("effb9-inb.png")
+
+    plot( mean(rst[:,  2:15:end], dims=2), mean( rst[:,  1:15:end], dims=2), label = "GS", xlabel="Mean inbreeding", ylabel="Mean " * L"\Delta G")
+    plot!(mean(rst[:,  7:15:end], dims=2), mean( rst[:,  6:15:end], dims=2), label = "Phenotype")
+    plot!(mean(rst[:, 12:15:end], dims=2), mean( rst[:, 11:15:end], dims=2), label = "Pedigree", dpi = 300)
+    savefig("effb9-inb-dg.png")
+    =#
 end
