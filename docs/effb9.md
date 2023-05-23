@@ -108,6 +108,7 @@ A similar selection scheme is simulated for pigs.
 
 ## Focus
 
+### Stage I
 The algorithm
 $$\left\{\begin{array}{c} n = 30\\ f = 5\%\end{array}\right.$$
 
@@ -127,10 +128,6 @@ $$\left\{\begin{array}{c} n = 30\\ f = 5\%\end{array}\right.$$
   - [x] Sample QTL and SNP separately from 19M founder SNP
   - [x] Select $n$ ♂ from 500 ♂
   - [x] Select $f$ ♀ from 10,000 ♀ as the mother of sires of the next generation
-
-!!! note
-    The simulation is still in debugging stage.
-    No result yet.
 
 ## Simulation scheme from Quinton et al., 1992
 
@@ -169,12 +166,50 @@ graph TD
 - Scenarios
   - [x] more generations, 20.
   - [x] twice sires, 20
-  - [ ] run a scheme with sire phenotypes, only to compare gs and ped.
+  - [x] run a scheme with sire phenotypes, only to compare gs and ped.
+    - moved to new selection scheme.
 - Report
-  - [ ] positive qtl lost
-    - [ ] my: potents, e.g., sum of the positive QTL
-    - [ ] using proportions lost
-  - [ ] plot $\Delta G$ against inbreeding
-  - [ ] add x, y labels to the plots
+  - [x] positive qtl lost
+    - [x] my: potents, e.g., sum of the positive QTL
+    - [x] using proportions lost
+  - [x] plot $\Delta G$ against inbreeding
+  - [x] add x, y labels to the plots
 
-*multiple factor incidence matrix function not right*
+
+## Optimization of the pedigree selection
+- [x] multiple factor incidence matrix
+- [ ] speed up pedigree selection
+- [x] function of ideal population
+- [ ] compare results from $\Sigma 2pqd^2$ and simulated populations.
+- [ ] Modify y-label, e.g., $\Delta G \to \overline{\mathrm{TBV}}$
+- [ ] Use debugged multi-factor incidence matrix
+
+## Simulation strategy of 2023-05-21
+
+```mermaid
+graph TD
+  subgraph "Stage 0"
+    Founder[MaCS]
+    Founder --> Sires
+    Founder --> Dams
+    Sires[50 sires] --> T(F0: random mate, each ID has 2 sons and 2 daughters)
+    Dams(50 dams) --> T
+  end
+  subgraph "Population"
+    T --> Off[100 sons and 100 daughters]
+  end
+  subgraph "Stage 2"
+    Off --> |Mass, ped, or GS| S2[10 selected sires]
+    Off --> |Mass, ped, or GS| D2[50 selected dams]
+    S2 --> T3(F6-20 fullsibs: 2 sons + 2 daughters each)
+    D2 --> T3
+    T3 ==> Off
+  end
+  subgraph "Stage 1"
+    S1 --> T2(F1-5 fullsib: 2 sons + 2 daughers each)
+    D1 --> T2
+    T2 ==> Off
+    Off --> |Random| S1[10 selected sires]
+    Off --> |Random| D1[50 Selected dams]
+  end
+```

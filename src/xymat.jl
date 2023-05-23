@@ -209,7 +209,7 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
     iseven(nhp) || error("Number of haplotypes $nhp must be even")
     dir == "" && (dir = dirname(ixy))
     bar = randstring(6)
-    oxy, omp = joinpath.(dir, bar .* ["-hap.xy", "-map.ser"])
+    oxy, omp = joinpath.(dir, bar .* ["-fdr.xy", "-map.ser"])
 
     # Parameter check
     ihdr = readhdr(ixy)

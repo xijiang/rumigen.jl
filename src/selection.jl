@@ -16,7 +16,7 @@ function pedng(ped, sel::Symbol, nsir, ndam)
 end
 
 """
-    function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs = false)
+    function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs = false, random = false)
 A simple selection strategy.
 - The population is of the same size of the last generation in `ped`.
 - Everybody has genotypes (in `xy`) and phenotypes (in `ped`).
@@ -24,17 +24,19 @@ A simple selection strategy.
 - Mate them randomly into full sibship families of equal sizes.
 - The first half of the sibs are males. The rest are females.
 - Selection is on `:pht` by default.
+    - If `random = true`, random select the parents.
     - If `ebv = true`, selection is on `:ebv`.
     - If `gs = true`, `:ebv` is of GEBV
     - By default, `:ebv` is of PEBV if to be calculated.
 - `h²` is calculated as `σₐ = 1`.
 """
-function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs = false)
+function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs = false, random = false)
     hdr, h² = readhdr(xy), 1 / (1 + σₑ^2)
     mt, et, mj, nr, nc = xyhdr(hdr)
     (mt == 'F' && mj == 0 && nc == 2nrow(ped)) || error("$xy, or pedigree not right")
     lms, nfam = sumMap(lmp), max(nsir, ndam)
     nsib = sum(ped.grt .== ped.grt[end]) ÷ nfam
+    # to generate the same number of animals in the last generation
     sibs = [ones(Int, nsib ÷ 2); zeros(Int, nsib - nsib ÷ 2)]
     @info "Selection on $xy, for $ngrt generations"
 
@@ -42,7 +44,10 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs 
         print(" $igrt")
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
         ogt = zeros(et, nr, nfam * nsib * 2)
-        pm = if ebv
+        pm = if random
+            ped.F = rand(nrow(ped)) # borrow :F, which is overwritten in the end
+            repeat(pedng(ped, :F, nsir, ndam), outer = nsib)
+        elseif ebv
             giv = if gs  # GEBV
                 grmiv(xy, lmp.chip)
             else   # PEBV
@@ -59,7 +64,8 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs 
         df = DataFrame(id = nrow(ped) + 1 : nrow(ped) + nsib * nfam,
                        pa = pm[:, 1], ma = pm[:, 2], 
                        sex = repeat(sibs, outer = nfam), 
-                       grt = igrt, tbv = tbv, 
+                       grt = ped.grt[end] + 1,
+                       tbv = tbv, 
                        pht = pht, ebv = 0., F = 0.)
         append!(ped, df)
         agt = nothing

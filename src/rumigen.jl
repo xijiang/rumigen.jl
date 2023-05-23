@@ -4,9 +4,11 @@ using BenchmarkTools
 using DataFrames
 using Distributions
 using Glob
+using LaTeXStrings
 using LinearAlgebra
 using Mmap
 using Octavian
+using Plots
 using Random
 using Serialization
 using SparseArrays

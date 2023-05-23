@@ -21,7 +21,7 @@ This is to make the matrix full rank.
 function incidence_matrix(df::DataFrame)
     n = nrow(df)
     u = [sort(unique(df[:, i]))[2:end] for i in 1:ncol(df)] # can also be 1:end-1, which has more codes than 2:end
-    m = sum([length(u[i]) for i in 1:length(u)]) + 1
+    m = sum([length(u[i]) for i in 1:length(u)])
     x, a = [ones(n) zeros(n, m)], 2
     for i in 1:length(u)
         for j in 1:length(u[i])
@@ -35,7 +35,7 @@ end
 """
     function zMatrix(nm)
 Given a vector of `Bool`s indicating if a phenotype is not missing, return a
-`Z` sparse matrix.
+`Z` sparse matrix for an animal model.
 """
 function zMatrix(nm)
     n, m = length(nm), sum(nm)

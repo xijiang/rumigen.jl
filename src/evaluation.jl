@@ -143,8 +143,8 @@ end
 
 """
     function idealPop(xy, grt, lmp)
-Given a genotype file `xy`, generation info `grt` and a linkage map `lmp`, calculate
-the maximum level of an ideal population.
+Given a genotype file `xy`, generation info `grt` and a linkage map `lmp`,
+calculate the maximum level of an ideal population.
 """
 function idealPop(xy, grt, lmp)
     # requirement check
@@ -184,4 +184,30 @@ function idealPop(xy, grt, lmp)
         push!(nn, nlost)    # number of negative loci lost
     end
     ideal, np, nn
+end
+
+"""
+    function idealID(nqtl, d; shape = 0.75, ϵ = 1e-5)
+Simulate effects of `nqtl` QTL of distribution `d`, and their ``Beta(.75, .75)``
+distributed frequencies, this function return how many TBV SD an ideal ID is
+away from population mean. The calculation stops when the ideal ID value SD
+stabilizes.
+"""
+function idealID(nqtl, d; shape = 0.75, ϵ = 1e-5)
+    vi, n = -1., 0
+    ideal = Float64[]
+    while true
+        for _ in 1:10
+            a = rand(d, nqtl) .* rand([-1, 1], nqtl) # QTL effects
+            p = rand(Beta(shape, shape), nqtl) # QTL frequencies
+            m = (2p .- 1)'a   # population mean
+            v = sum(2 .* p .* (1 .- p) .* a .* a) # population genetic variance
+            b = (sum(a[a .> 0]) - m) / sqrt(v)    # best ID from population mean
+            push!(ideal, b)
+        end
+        n += 10
+        t = var(ideal)
+        abs(vi - t) < ϵ ? break : vi = t
+    end
+    mean(ideal), std(ideal), n
 end
