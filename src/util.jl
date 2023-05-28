@@ -35,7 +35,7 @@ end
 """
     function zMatrix(nm)
 Given a vector of `Bool`s indicating if a phenotype is not missing, return a
-`Z` sparse matrix for an animal model.
+`Z` sparse matrix of `m` phenotypes and `n` ID, for an animal model.
 """
 function zMatrix(nm)
     n, m = length(nm), sum(nm)

@@ -163,6 +163,7 @@ graph TD
 ![](./figures/q.png)
 
 ### Action points
+
 - Scenarios
   - [x] more generations, 20.
   - [x] twice sires, 20
@@ -175,8 +176,8 @@ graph TD
   - [x] plot $\Delta G$ against inbreeding
   - [x] add x, y labels to the plots
 
-
 ## Optimization of the pedigree selection
+
 - [x] multiple factor incidence matrix
 - [ ] speed up pedigree selection
 - [x] function of ideal population
@@ -199,7 +200,7 @@ graph TD
     T --> Off[100 sons and 100 daughters]
   end
   subgraph "Stage 2"
-    Off --> |Mass, ped, or GS| S2[10 selected sires]
+    Off --> |Mass, ped, or GS| S2[20 selected sires]
     Off --> |Mass, ped, or GS| D2[50 selected dams]
     S2 --> T3(F6-20 fullsibs: 2 sons + 2 daughters each)
     D2 --> T3
@@ -209,7 +210,45 @@ graph TD
     S1 --> T2(F1-5 fullsib: 2 sons + 2 daughers each)
     D1 --> T2
     T2 ==> Off
-    Off --> |Random| S1[10 selected sires]
+    Off --> |Random| S1[20 selected sires]
     Off --> |Random| D1[50 Selected dams]
   end
 ```
+
+![](c791a.png)
+
+## Meeting 2023-05-24
+
+- focus more on $\Delta G$ and IBD
+  - management of diversity
+- continue with no phenotypes for sires, to be more realistic
+- another way to look: if to reach similar progress, phenotypic selection results are more inbred.
+  - Selection more intensively for phenotypic selection.
+- how to address drift?
+  - selection $\overline{G}$ versus variance $\sigma_{\overline{G}}$ from mean $F_1$. meaning more fluctuations, which is due to drift, and prediction errors.
+
+## Meeting 2023-05-31
+
+- [x] `isodd` vs `.>0`, ([Notebook](even-odd-sign.ipynb)), the former is faster
+- [x] $\mathbf{A}^{-1}$ calculation
+  - [x] Improve $F$ calculation using mid-results
+  - [ ] Calculate $F$ using simulation.
+- [ ] $\overline G$ vs. $\mathrm{Std}(\overline{\mathrm{TBV}})$
+- [ ] Similar progress, inbreeding for selection on phenotypes
+- [ ] More realistic selection, bulls have no phenotype.
+- [ ] IdealID
+- [ ] Paper one?
+
+### About quick $F$ calculation
+
+- [x] A random pedigree for tests
+- [x] Unique allele assignment for the pedigree genotypes, default 1000 loci
+- [x] Random drop the genotypes according the pedigree
+  - [x] Calculate approximate $F$ also
+- [ ] The `quickF` function
+  - [ ] record mean $F$, or $\tilde F$
+  - [ ] iteration stops when $\delta = \sum(\mathrm{abs}(\tilde F - F)) < \epsilon$.
+    - [ ] Check the trend of $\delta$
+  - [ ] return the exact value of the first 10 generations
+  - [ ] return $\tilde F$ of the rest
+- [ ] Test speed using random populations

@@ -21,17 +21,22 @@ end
 
 function animalModel(ped, giv, h²; fix = [:grt])
     λ = (1.0 - h²) / h²
-    #X = incidence_matrix(select(ped, fix))
-    X = incidence_matrix(ped.grt) # ToDo: fix above function
+    X = incidence_matrix(select(ped, fix))
     Z = zMatrix(.!ismissing.(ped.pht))
     Y = collect(skipmissing(ped.pht))
-    lhs = Matrix([X'X X'Z
-                  Z'X Z'Z + λ * giv])
+    lhs = if issparse(giv)
+        [X'X X'Z
+         Z'X Z'Z + λ * giv]
+    else
+        Matrix([X'X X'Z
+                Z'X Z'Z + λ * giv])
+    end
     rhs = vec([X'Y; Z'Y])
     nf = size(X, 2)
-    #ebv = (lhs \ rhs)[nf + 1 : end]
-    LAPACK.posv!('U', lhs, rhs)
-    ped.ebv = rhs[nf + 1 : end]
+    @info "Solving BLUP"
+    @time ebv = (lhs \ rhs)[nf + 1 : end]
+    # LAPACK.posv!('U', lhs, rhs)
+    ped.ebv = ebv
 end
 
 """

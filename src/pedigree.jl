@@ -53,8 +53,9 @@ function ped_F(ped; force = false)
     end
     N = nrow(ped)
     F = zeros(N)
-    dic = Dict{Tuple{Int, Int}, Float64}()
+    dic = Relation()
     for i in 1:N
+        # for the `dic` here, no need to consider full siblings
         F[i] = kinship(ped, i, i, dic) - 1
     end
     ped.F = F
@@ -89,12 +90,6 @@ Give a pedigree DataFrame, with its first 2 column as `pa`, and `ma`,
 this function return the T matrix used for A⁻¹ calculation.
 """
 function T4A⁻¹(ped)
-    # R, C, V: row, column and value specifying values in a sparse matrix
-    function pushRCV!(R, C, V, r, c, v)
-        push!(R, r)
-        push!(C, c)
-        push!(V, v)
-    end
     R, C, V = Int[], Int[], Float64[]
     for (id, (pa, ma)) in enumerate(eachrow(ped))
         pa > 0 && pushRCV!(R, C, V, id, pa, -.5)
@@ -232,5 +227,122 @@ function grmiv(xy::AbstractString, chip)
     end
     g = grm(gt) + 0.01I
     g isa AbstractString && (@error "Not enough memory to calculate GRM")
-    inv(g)
+    LAPACK.potrf!('L', g)
+    LAPACK.potri!('L', g)
+    for i in 2:size(g, 1)
+        g[i-1, i:end] = g[i:end, i-1]
+    end
+    g
+end
+
+"""
+    function A⁻¹(ped, ser)
+If `ped` is an expanded pedigree. The `A⁻¹` of `ped`'s previous version was
+calculated. This function will reuse the previous results of `D`, `RCV` for `T`,
+`F` and relationships dictionary serialized in `ser` to calculate `A⁻¹` of
+`ped`. New results will be serialized in `ser` for future use.
+
+## Notes
+- Note that in `ped`, the row number is the same as ID number.  Unkown parents
+are zeros.
+- New ID numbers appended must be larger than the previous ones.
+"""
+function A⁻¹(ped, ser)
+    tpd = select(ped, :pa, :ma)
+
+    R, C, V, F, dic, D = if isfile(ser)
+        deserialize(ser)
+    else
+        Int64[], Int64[], Float64[], Float64[], Relation(), Float64[]
+    end
+    pid, nid = length(D), nrow(tpd)
+
+    # New T
+    for (id, (pa, ma)) in enumerate(eachrow(tpd))
+        id ≤ pid && continue
+        pa > 0 && pushRCV!(R, C, V, id, pa, -0.5)
+        ma > 0 && pushRCV!(R, C, V, id, ma, -0.5)
+        pushRCV!(R, C, V, id, id, 1.0)
+    end
+    T = sparse(R, C, V)
+
+    # update F for new IDs
+    for i in pid+1:nid
+        push!(F, kinship(tpd, i, i, dic) - 1)
+    end
+
+    # update D
+    for i in pid+1:nid
+        pa, ma = tpd[i, :]
+        vp = (pa == 0) ? -.25 : .25F[pa]
+        vm = (ma == 0) ? -.25 : .25F[ma]
+        push!(D, .5 - vp - vm)
+    end
+
+    di = Diagonal(1. ./ D)
+
+    serialize(ser, (R, C, V, F, dic, D))
+    T'di*T
+end
+
+function initUSNP(ped; nlc = 1000)
+    tpd, nid = select(ped, :pa, :ma), nrow(ped)
+    nfdr = sum(iszero, tpd.pa) + sum(iszero, tpd.ma)
+    et = nfdr < 256 ? UInt8 : UInt16
+    gt, usnp = zeros(et, nlc, 2nid), 1
+    for id in 1:nid
+        pa, ma = tpd[id, :]
+        if pa == 0
+            gt[:, 2id-1] .= usnp
+            usnp += 1
+        end
+        if ma == 0
+            gt[:, 2id]   .= usnp
+            usnp += 1
+        end
+    end
+    gt
+end
+
+"""
+    function fastF(ped; nlc = 1000, ϵ = 1e-5, inc = 10)
+This function return the exact `F` for the first 10 generations. For the rest
+generations, it simulate 1000 independent loci of unique alleles and drop them
+according to `ped`. It then count IBD for each ID. This process is repeated
+untill the mean std of the approximate `F` mean of the first 10 generations is
+smaller than `ϵ = 1e-5`.
+
+## Notes
+
+- The pedigree must to be sorted such that offspring appear after their parents.
+- The pedigree must be coded such that row number is the same as ID number.
+- Unkown parents are zeros. They are counted for unique alleles.
+"""
+function fastF(ped; nlc = 1000, ϵ = 1e-3, inc = 10)
+    grt = unique(ped.grt)
+    ngrt, nid = length(grt), nrow(ped)
+    eid = ngrt ≤ 10 ? nid : findfirst(x -> x == grt[11], ped.grt) - 1
+
+    F, dic = zeros(nid), Relation() # exact F for the first 10 generations
+    for i in 1:eid
+        F[i] = kinship(ped, i, i, dic) - 1
+    end
+    ped.F = F
+
+    ngrt ≤ 10 && return ped
+
+    # approximate F for the rest generations
+    gt, vf = initUSNP!(ped, nlc = nlc), 1.
+    randrop(gt, ped) # check pedigree
+    any(gt .== 0) && error("Pedigree has wrong ordered IDs.")
+    mf, sf = zeros(eid), zeros(eid)
+    while vf > ϵ
+        for _ in 1:inc
+            tf = randrop!(gt, ped)
+            tf = tf[1:eid] - F[1:eid]
+            mf += tf
+            sf += tf.^2
+        end
+        vf = (sum(sf) - nid * mean(mf)^2) / (nid - 1)
+    end
 end

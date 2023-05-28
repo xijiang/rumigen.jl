@@ -22,7 +22,14 @@ function xps_effb9(; describe = true, debug = true)
     # The working parts
     if debug
         @warn "Debugging"
-        foo, bar = "016Im", "nEm2Bb"
+        foo = "016Im"
+        # improve speed below
+        bar = fdr_effb9(fdr, dir, foo, ppsz, nlc, nqtl, d = dist)
+        lmp = deserialize("$dir/$bar-map.ser") # each sample has its own map
+        pre_effb9(dir, bar, nsir, ndam, pres, σₑ)  # ==> pres gnrtn's of rand mat'g
+        ped = deserialize("$dir/$bar-uhp+ped.ser")
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-spd.xy", force = true)
+        simpleSelection("$dir/$bar-spd.xy", ped, lmp, nsir, ndam, ngrt, σₑ, ebv = true)
     else
         describe && tprintln(Term.parse_md(read("docs/effb9.md", String)))
         #foo = base_effb9(ppsz, rst)                     # ==> base
@@ -44,7 +51,7 @@ function xps_effb9(; describe = true, debug = true)
             simpleSelection("$dir/$bar-spd.xy", ped, lmp, nsir, ndam, ngrt, σₑ, ebv = true)
 
             # Genomic selection
-            ped = deserialize("$dir/$bar-f0-ped.ser")
+            ped = deserialize("$dir/$bar-uhp+ped.ser")
             cp("$dir/$bar-uhp.xy", "$dir/$bar-sgs.xy", force = true)
             simpleSelection("$dir/$bar-sgs.xy", ped, lmp, nsir, ndam, ngrt, σₑ, ebv = true, gs = true)
             #sum_effb9(dir, bar)

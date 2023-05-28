@@ -38,6 +38,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs 
     nsib = sum(ped.grt .== ped.grt[end]) ÷ nfam
     # to generate the same number of animals in the last generation
     sibs = [ones(Int, nsib ÷ 2); zeros(Int, nsib - nsib ÷ 2)]
+    ser = splitext(xy)[1] * "-mid.ser" # to store mid-results for A⁻¹
     @info "Selection on $xy, for $ngrt generations"
 
     for igrt in 1:ngrt
@@ -51,7 +52,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs 
             giv = if gs  # GEBV
                 grmiv(xy, lmp.chip)
             else   # PEBV
-                A⁻¹(ped)
+                A⁻¹(ped, ser)
             end
             animalModel(ped, giv, h²) # default using :grt as fixed effect
             repeat(pedng(ped, :ebv, nsir, ndam), outer = nsib)

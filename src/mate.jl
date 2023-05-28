@@ -142,6 +142,30 @@ function drop(pg::AbstractArray, og::AbstractArray, pm, lms)
 end
 
 """
+    function randrop!(gt, ped)
+Drop parents' alleles in `gt` into their offspring according to pedigree `ped`.
+Assuming no linkage among loci. The empirical `F` is calculated and returned.
+"""
+function randrop!(gt, ped)
+    function _drop(gt, p, oh)
+        pg = view(gt, :, 2p-1:2p)
+        for i in 1:length(oh)
+            oh[i] = pg[i, rand(1:2)]
+        end
+    end
+    (nlc, nhp), nid = size(gt), nrow(ped)
+    nhp == 2nid || error("Haplotypes do not match pedigree")
+    F = zeros(nid)
+    for id in 1:nid
+        pa, ma = ped.pa[id], ped.ma[id]
+        pa > 0 && _drop(gt, pa, view(gt, :, 2id-1))
+        ma > 0 && _drop(gt, ma, view(gt, :, 2id))
+        pa * ma > 0 && (F[id] = sum(gt[:, 2id-1] .== gt[:, 2id]) / nlc)
+    end
+    F
+end
+
+"""
     function drop(fra::AbstractString, til::AbstractString, pm, lms)
 Drop haplotypes from haplotypes in file `fra` of xy format, into 
 another xy file `til`, according to sire and dam info in `pm` and 

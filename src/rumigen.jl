@@ -27,4 +27,6 @@ include("term.jl")
 include("util.jl")
 include("xymat.jl")
 
+Relation = Dict{Tuple{Int, Int}, Float64}
+
 end # module rumigen
