@@ -33,8 +33,7 @@ function animalModel(ped, giv, h²; fix = [:grt])
     end
     rhs = vec([X'Y; Z'Y])
     nf = size(X, 2)
-    @info "Solving BLUP"
-    @time ebv = (lhs \ rhs)[nf + 1 : end]
+    ebv = (lhs \ rhs)[nf + 1 : end]
     # LAPACK.posv!('U', lhs, rhs)
     ped.ebv = ebv
 end

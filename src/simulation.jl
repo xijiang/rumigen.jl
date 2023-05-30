@@ -121,11 +121,12 @@ function randPed(nid, ng)
     nsir = nid ÷ 2
     be = [1, nsir, nsir + 1, nid] # begin and end of sire and dam
 
-    ped = DataFrame(pa = Int[], ma = Int[])
+    sex = [ones(Int, nsir); zeros(Int, nid - nsir)]
+    ped = DataFrame(pa = zeros(Int, nid), ma = zeros(Int, nid), sex = sex, grt = 0)
 
-    for _ in 1:ng
+    for ig in 1:ng
         pm = randomMate(be[1]:be[2], be[3]:be[4], noff=nid)
-        append!(ped, DataFrame(pa = pm[:, 1], ma = pm[:, 2]))
+        append!(ped, DataFrame(pa = pm[:, 1], ma = pm[:, 2], sex = sex, grt = ig))
         be .+= nid
     end
     ped

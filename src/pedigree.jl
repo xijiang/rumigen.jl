@@ -57,6 +57,7 @@ function ped_F(ped; force = false)
     for i in 1:N
         # for the `dic` here, no need to consider full siblings
         F[i] = kinship(ped, i, i, dic) - 1
+        i % 200 == 0 && print("\t$i")
     end
     ped.F = F
     nothing
@@ -71,8 +72,9 @@ function ped_D(ped; force = false)
     if "D" ∈ names(ped)
         force ? select!(ped, Not([:D])) : return
     end
-    "F" ∈ names(ped) || ped_F(ped)
+    #"F" ∈ names(ped) || ped_F(ped)
     N = nrow(ped)
+    "F" ∈ names(ped) || (ped.F = diag(Amat(ped, m = N)))
     D = .5ones(N)
     for i in 1:N
         pa, ma = ped[i, :]
@@ -250,10 +252,10 @@ are zeros.
 function A⁻¹(ped, ser)
     tpd = select(ped, :pa, :ma)
 
-    R, C, V, F, dic, D = if isfile(ser)
+    R, C, V, D = if isfile(ser)
         deserialize(ser)
     else
-        Int64[], Int64[], Float64[], Float64[], Relation(), Float64[]
+        Int64[], Int64[], Float64[], Float64[]
     end
     pid, nid = length(D), nrow(tpd)
 
@@ -266,10 +268,7 @@ function A⁻¹(ped, ser)
     end
     T = sparse(R, C, V)
 
-    # update F for new IDs
-    for i in pid+1:nid
-        push!(F, kinship(tpd, i, i, dic) - 1)
-    end
+    F = diag(Amat(ped, m = nid)) .- 1
 
     # update D
     for i in pid+1:nid
@@ -281,7 +280,7 @@ function A⁻¹(ped, ser)
 
     di = Diagonal(1. ./ D)
 
-    serialize(ser, (R, C, V, F, dic, D))
+    serialize(ser, (R, C, V, D))
     T'di*T
 end
 
@@ -317,6 +316,8 @@ smaller than `ϵ = 1e-5`.
 - The pedigree must to be sorted such that offspring appear after their parents.
 - The pedigree must be coded such that row number is the same as ID number.
 - Unkown parents are zeros. They are counted for unique alleles.
+
+! ToDo: not finished. may use threads later.
 """
 function fastF(ped; nlc = 1000, ϵ = 1e-3, inc = 10)
     grt = unique(ped.grt)

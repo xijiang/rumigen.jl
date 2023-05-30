@@ -41,14 +41,14 @@ Calculate mean `tbv`, `F`, of each generation, and number
 of fixed loci on chip and QTL in the end.
 """
 function sum_effb9(dir, bar)
-    for sel in ["-sgs", "spt", "spd"]
+    for sel in ["sgs", "spt", "spd"]
         ped = deserialize("$dir/$bar-$sel+ped.ser")
         lmp = deserialize("$dir/$bar-map.ser")
-        sp = combine(groupby(ped, :grt), :tbv => mean => :tbv, :tbv => var => :vbv, :F => mean => :F)
+        sp = combine(groupby(ped, :grt), :tbv => mean => :mbv, :tbv => var => :vbv, :F => mean => :mF)
         open("$dir/effb9.bin", "a") do io
-            write(io, sp.tbv[2:end])
+            write(io, sp.mbv[2:end])
             write(io, sp.vbv[2:end])  # as requested by SMS on 2023-05-21, by Theo
-            write(io, sp.F[2:end])
+            write(io, sp.mF[2:end])
             ideal, plst, nlst = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
             write(io, ideal[2:end])
             write(io, plst[2:end])

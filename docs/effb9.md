@@ -252,3 +252,24 @@ graph TD
   - [ ] return the exact value of the first 10 generations
   - [ ] return $\tilde F$ of the rest
 - [ ] Test speed using random populations
+
+#### Best time for $F$ calculation
+
+- Population size: 200
+- Half males, half females
+- Totally random mating
+- Best time from `@benchmark` of `BenchmarkTools`
+
+| $N_g$ | o/ dict (ms) | w/ dict |
+| --: | --: | --: |
+| 1 | 0.81 | 1.00 |
+| 2 | 3.14 | 3.59 |
+| 3 | 3.06 | 3.61 |
+| 4 | 12.2 | 13.2 |
+| 5 | 49.4 | 48.2 |
+| 6 | 203 | 157 |
+| 7 | 817 | 190 |
+| 8 | 3270 | 1160 |
+| 9 | 13155 | 3010 |
+| 10 | 53108 | 7722 |
+| 11 | 210872 | 18562 |
