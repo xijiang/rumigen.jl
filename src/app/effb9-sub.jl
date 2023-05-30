@@ -66,50 +66,54 @@ function stats_effb9(file, ngrt)
             read!(io, a)
             read!(io, b)
             append!(rst, a)
-            append!(rst, b)
+            # append!(rst, b) # I ignore fixed QTL numbers here
         end
     end
     rst = reshape(rst, ngrt, :) # I ignore fixed QTL numbers here
 
-    mvggs = mean(rst[:,  2:18:end], dims=2)
-    mvgpt = mean(rst[:,  8:18:end], dims=2)
-    mvgpd = mean(rst[:, 14:18:end], dims=2)
-    mfgs = mean(rst[:,  3:18:end], dims=2)
-    mfpt = mean(rst[:,  9:18:end], dims=2)
-    mfpd = mean(rst[:, 15:18:end], dims=2)
+    gs_mg  = mean(rst[:, 1:12:end], dims=2)
+    gs_sg  = std( rst[:, 1:12:end], dims=2)
+    gs_σₐ² = mean(rst[:, 2:12:end], dims=2)
+    gs_mF  = mean(rst[:, 3:12:end], dims=2)
+    gs_clg = mean(rst[:, 4:12:end], dims=2) # clg: ceiling
 
-    plot(mfgs, mvggs, label="GS", xlabel="Inbreeding", ylabel = L"\Delta\sigma_a^2", dpi = 300)
-    plot!(mfpt, mvgpt, label="Phenotype")
-    plot!(mfpd, mvgpd, label="Pedigree")
+    pt_mg  = mean(rst[:, 5:12:end], dims=2)
+    pt_sg  = std( rst[:, 5:12:end], dims=2)
+    pt_σₐ² = mean(rst[:, 6:12:end], dims=2)
+    pt_mF  = mean(rst[:, 7:12:end], dims=2)
+    pt_clg = mean(rst[:, 8:12:end], dims=2)
 
-    mdggs = mean(rst[:, 1:18:end], dims=2)
-    mdgpt = mean(rst[:, 7:18:end], dims=2)
-    mdgpd = mean(rst[:,13:18:end], dims=2)
+    pd_mg  = mean(rst[:, 9:12:end], dims=2)
+    pd_sg  = std( rst[:, 9:12:end], dims=2)
+    pd_σₐ² = mean(rst[:,10:12:end], dims=2)
+    pd_mF  = mean(rst[:,11:12:end], dims=2)
+    pd_clg = mean(rst[:,12:12:end], dims=2)
 
-    plot( 1 .- mvggs, mdggs, label="GS", xlabel=L"1 - \sigma_a^2", ylabel = L"\Delta G", dpi = 300)
-    plot!(1 .- mvgpt, mdgpt, label="Phenotype")
-    plot!(1 .- mvgpd, mdgpd, label="Pedigree")
-    savefig("effb9-gvsvg.png")
-    return
-    #=
-    gap = 50
-    plot( mean(rst[:,  1:15:end], dims=2), label="GS", xlabel="Generation", ylabel=L"\Delta G", dpi = 300, ribbon = sdg[:, 1], color=1, fillalpha = 0.2)
-    plot!(mean(rst[:,  3:15:end], dims=2) .-gap, label="max(GS) - $gap", ls=:dash, color=1)
-    plot!(mean(rst[:,  6:15:end], dims=2), label="Phenotype", color=2)
-    plot!(mean(rst[:,  8:15:end], dims=2) .-gap, label="max(phenotype) - $gap", ls=:dash, color=2, ribbon=std(rst[:, 8:15:end], dims=2) / sqrt(200), fillalpha = 0.2)
-    plot!(mean(rst[:, 11:15:end], dims=2), label="Pedigree", color=4, ribbon = sdg[:, 2], fillalpha = 0.2)
-    plot!(mean(rst[:, 13:15:end], dims=2) .-gap, label="max(pedigree) - $gap", ls=:dash, color=4, leg=:left)
-    savefig("effb9-dg.png") # yerror can be used instead of ribbon
+    plot( -4:ngrt-5, gs_mg, label = "Genomic selection", xlabel = "Generation", ylabel = "Mean TBV", dpi = 300, legend = :left)
+    plot!(-4:ngrt-5, pt_mg, label = "Phenotypic selection")
+    plot!(-4:ngrt-5, pd_mg, label = "Pedigree selection")
+    plot!(-4:ngrt-5, gs_clg .- 40, color = 1, label = "GS ceiling - 40")
+    plot!(-4:ngrt-5, pt_clg .- 40, color = 2, label = "Phen. sel. ceiling - 40")
+    plot!(-4:ngrt-5, pd_clg .- 40, color = 3, label = "Pedi. sel. ceiling - 40")
+    savefig("effb9-mg.png")
 
+    plot( gs_mg[6:end], gs_sg[6:end], label = "GS risks", ylabel = "STD of TBV", xlabel = "Mean TBV", dpi = 300)
+    plot!(pt_mg[6:end], pt_sg[6:end], label = "Phe.S. risks")
+    plot!(pd_mg[6:end], pd_sg[6:end], label = "Ped.S. risks")
+    savefig("effb9-mg-sg.png")
 
-    plot( mean(rst[:,  2:15:end], dims=2), label="GS", xlabel="Generation", ylabel="Mean inbreeding")
-    plot!(mean(rst[:,  7:15:end], dims=2), label="Phenotype")
-    plot!(mean(rst[:, 12:15:end], dims=2), label="Pedigree", dpi = 300)
-    savefig("effb9-inb.png")
+    plot( -4:ngrt-5, gs_σₐ², label = "Genomic selection", xlabel = "Generation", ylabel = "Mean σₐ²", dpi = 300)
+    plot!(-4:ngrt-5, pt_σₐ², label = "Phenotypic selection")
+    plot!(-4:ngrt-5, pd_σₐ², label = "Pedigree selection")
+    savefig("effb9-va.png")
 
-    plot( mean(rst[:,  2:15:end], dims=2), mean( rst[:,  1:15:end], dims=2), label = "GS", xlabel="Mean inbreeding", ylabel="Mean " * L"\Delta G")
-    plot!(mean(rst[:,  7:15:end], dims=2), mean( rst[:,  6:15:end], dims=2), label = "Phenotype")
-    plot!(mean(rst[:, 12:15:end], dims=2), mean( rst[:, 11:15:end], dims=2), label = "Pedigree", dpi = 300)
-    savefig("effb9-inb-dg.png")
-    =#
+    plot( -4:ngrt-5, gs_mF, label = "Genomic selection", xlabel = "Generation", ylabel = "Mean F", dpi = 300)
+    plot!(-4:ngrt-5, pt_mF, label = "Phenotypic selection")
+    plot!(-4:ngrt-5, pd_mF, label = "Pedigree selection")
+    savefig("effb9-mf.png")
+
+    plot( gs_mF, gs_mg, label = "Genomic selection", xlabel = "Mean F", ylabel = "Mean TBV", dpi = 300)
+    plot!(pt_mF, pt_mg, label = "Phenotypic selection")
+    plot!(pd_mF, pd_mg, label = "Pedigree selection")
+    savefig("effb9-mf-mg.png")
 end
