@@ -41,6 +41,7 @@ function theoretical_c791a()
 
     writexy("c791a.xy", [ideal_normal sdi_normal ideal_uniform sdi_uniform ideal_gamma sdi_gamma ideal_laplace sdi_laplace])
 
+    #=
     @info "Plotting"
     qtls /= 100
     plot(qtls, ideal_normal, ribbon = sdi_normal, fillalpha = 0.3,
@@ -54,6 +55,7 @@ function theoretical_c791a()
     plot!(qtls, ideal_laplace, ribbon = sdi_laplace,
           fillalpha = 0.3, label = "Laplace(0, 1)")
     savefig("c791a.svg")
+    =#
 end
 
 

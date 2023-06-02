@@ -233,11 +233,18 @@ graph TD
 - [x] $\mathbf{A}^{-1}$ calculation
   - [x] Improve $F$ calculation using mid-results
   - [ ] Calculate $F$ using simulation.
+  - [ ] remove leaves in pedigree
 - [ ] $\overline G$ vs. $\mathrm{Std}(\overline{\mathrm{TBV}})$
-- [ ] Similar progress, inbreeding for selection on phenotypes
+- [ ] **Similar progress, inbreeding for selection on phenotypes**
+  - try to get inbreeding similar to GS
+  - two phenotypic selection setups
 - [ ] More realistic selection, bulls have no phenotype.
-- [ ] IdealID
+- [ ] IdealID, ceiling
 - [ ] Paper one?
+- [ ] $\sum 2pqa^2$
+- [ ] accuracy of selections
+- [ ] share 6 figures
+- [ ] $\Delta\overline G$
 
 ### About quick $F$ calculation
 

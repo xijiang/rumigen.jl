@@ -11,6 +11,10 @@ function mddic_8ac835(ped)
     end
 end
 
+function table_8ac835(ped)
+    Amat(ped, m = nrow(ped))
+end
+
 function xps_8ac835()
     for ig in 1:15 # pedigree depth
         ped = randPed(200, ig)
