@@ -76,7 +76,7 @@ echo Three phenotype scenarios plus pedgree and gs | md5sum
 """
 function xps_c140ad(; debug = true)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
-    nsir, ndam, pres, ngrt, nrpt, dist = 20, 50, 5, 20, 1, Normal()
+    nsir, ndam, pres, ngrt, nrpt, dist = 20, 50, 5, 20, 200, Normal()
     fdr, dir = "$rst/base", "$rst/c140ad"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
