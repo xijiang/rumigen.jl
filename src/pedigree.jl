@@ -51,10 +51,9 @@ function ped_F(ped; force = false)
     if "F" ∈ names(ped)
         force ? select!(ped, Not([:F])) : return
     end
-    N = nrow(ped)
-    F = zeros(N)
+    F = [0. for _ in eachrow(ped)]
     dic = Relation()
-    for i in 1:N
+    for i in eachrow(ped)
         # for the `dic` here, no need to consider full siblings
         F[i] = kinship(ped, i, i, dic) - 1
         i % 200 == 0 && print("\t$i")
@@ -76,7 +75,7 @@ function ped_D(ped; force = false)
     N = nrow(ped)
     "F" ∈ names(ped) || (ped.F = diag(Amat(ped, m = N)))
     D = .5ones(N)
-    for i in 1:N
+    for i in eachrow(ped)
         pa, ma = ped[i, :]
         vp = (pa == 0) ? -.25 : .25ped.F[pa]
         vm = (ma == 0) ? -.25 : .25ped.F[ma]

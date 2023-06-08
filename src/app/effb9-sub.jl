@@ -44,15 +44,20 @@ function sum_effb9(dir, bar)
     for sel in ["sgs", "spt", "spd"]
         ped = deserialize("$dir/$bar-$sel+ped.ser")
         lmp = deserialize("$dir/$bar-map.ser")
-        sp = combine(groupby(ped, :grt), :tbv => mean => :mbv, :tbv => var => :vbv, :F => mean => :mF)
+        sp = combine(groupby(ped, :grt), 
+                            :tbv => mean => :mbv,
+                            :tbv => var => :vbv,
+                            :F => mean => :mF,
+                            [:ebv, :tbv] => cor => :cor)
         open("$dir/effb9.bin", "a") do io
-            write(io, sp.mbv[2:end])
-            write(io, sp.vbv[2:end])  # as requested by SMS on 2023-05-21, by Theo
-            write(io, sp.mF[2:end])
-            ideal, plst, nlst = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
-            write(io, ideal[2:end])
-            write(io, plst[2:end])
-            write(io, nlst[2:end])
+            ideal, _, _ = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
+            write(io, sp.mbv[2:end],
+                      sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
+                      sp.mF[2:end],
+                      sp.cor[2:end],
+                      ideal[2:end])
+            # write(io, plst[2:end])
+            # write(io, nlst[2:end])
         end
     end
 end

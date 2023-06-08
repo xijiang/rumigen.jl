@@ -21,8 +21,9 @@ end
 
 function animalModel(ped, giv, h²; fix = [:grt])
     λ = (1.0 - h²) / h²
-    X = incidence_matrix(select(ped, fix))
-    Z = zMatrix(.!ismissing.(ped.pht))
+    p = .!ismissing.(ped.pht) # only for the phenotyped animals
+    Z = Zmat(p)
+    X = incidence_matrix(select(ped, fix))[p, :]
     Y = collect(skipmissing(ped.pht))
     lhs = if issparse(giv)
         [X'X X'Z
@@ -166,28 +167,31 @@ function idealPop(xy, grt, lmp)
     qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
     efct = lmp.efct[lmp.qtl]
     best = sum(efct[efct .> 0])
-    ideal, np, nn = Float64[], Int64[], Int64[]
+    ideal, va, np, nn = Float64[], Float64[], Int64[], Int64[]
     for ig in sort(unique(grt))
         iqg = qg[:, grt .== ig] # QTL genotypes of the ith generation
-        posi, plost, nlost = best, 0, 0
+        plost, nlost = 0, 0  # positive and negative QTL lost
         for (i, v) in enumerate(efct)
             if v > 0
                 if all(iqg[i, :] .== 0)
-                    posi -= v
+                    best -= v
                     plost += 1
                 end
             else
                 if all(iqg[i, :] .== 1)
-                    posi += v
+                    best += v
                     nlost += 1
                 end
             end
         end
-        push!(ideal, posi)
+        p = mean(iqg, dims=2) ./ 2
+        vv = (2p .* (1 .- p))' * (efct .* efct)
+        push!(ideal, best)
+        push!(va, vv[1])
         push!(np, plost)    # number of positive loci lost
         push!(nn, nlost)    # number of negative loci lost
     end
-    ideal, np, nn
+    ideal, va, np, nn
 end
 
 """

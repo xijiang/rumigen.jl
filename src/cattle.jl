@@ -35,3 +35,30 @@ function cattle_genome(macs, nid::Int; dir=pwd())
     println()
     wdir
 end
+
+"""
+    function cattle_base(nid, rst)
+Generate a cattle base population with MaCS.
+"""
+function cattle_base(nid, rst)
+    tprintln("Generating a base population with MaCS")
+    macs = make_macs(tdir = rst)
+    tmp = cattle_genome(macs, nid, dir = "$rst/base")
+    macs2xy(tmp)  # returns foo
+end
+
+"""
+    function cattle_founder(fdr, dir, foo, nsir, ndam, ppsz, nlc, nqtl)
+Sample founders from the base population and mate them very randomly into F1.
+"""
+function cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl; d = Normal())
+    @info "Sample founders from the base population created with MaCS"
+
+    # sample haplotypes for the founder population
+    nhp = 2ppsz
+    bar = sampleFdr("$fdr/$foo-hap.xy", "$fdr/$foo-map.ser",
+                    nhp, nlc = nlc, nqtl = nqtl, dir = dir)
+    simQTL("$dir/$bar-fdr.xy", "$dir/$bar-map.ser", d = d)
+    uniqSNP("$dir/$bar-fdr.xy")
+    return bar
+end

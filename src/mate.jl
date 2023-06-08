@@ -149,7 +149,7 @@ Assuming no linkage among loci. The empirical `F` is calculated and returned.
 function randrop!(gt, ped)
     function _drop(gt, p, oh)
         pg = view(gt, :, 2p-1:2p)
-        for i in 1:length(oh)
+        for i in eachindex(oh)
             oh[i] = pg[i, rand(1:2)]
         end
     end

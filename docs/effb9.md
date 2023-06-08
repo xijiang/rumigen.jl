@@ -114,7 +114,7 @@ $$\left\{\begin{array}{c} n = 30\\ f = 5\%\end{array}\right.$$
 
 - [x] MaCS $\to$ Founder, or 2000 haplotypes
 - [ ] The $F_0$ generation
-  - [x] Sample haplopypes from the founder $\to$ 1000 pairs, for 500♂ and 500♀
+  - [x] Sample haplotypes from the founder $\to$ 1000 pairs, for 500♂ and 500♀
   - [x] Sample 50k SNPs and 10k QTL from the 19M total SNPs
   - [x] Random (totally) mate 500♂ and 500♀ to produce 10,500 offspring
     - where, 500 are ♂, 10,000 are ♀
@@ -141,12 +141,12 @@ $$\left\{\begin{array}{c} n = 30\\ f = 5\%\end{array}\right.$$
 ```mermaid
 graph TD
   
-  Sires[50 sires] --> T(F0 fullsib: 2 sons + 2 daughters each)
+  Sires[50 sires] --> T(F0 full sib: 2 sons + 2 daughters each)
   Dams(50 dams) --> T
   T --> Off[100 sons and 100 daughters]
   Off --> |Mass, Ped, or GS| S1[10 selected sires]
   Off --> |Mass, Ped, or GS| D1[50 Selected dams]
-  S1 --> T2(F1-10 fullsib: 2 sons + 2 daughers each)
+  S1 --> T2(F1-10 full sib: 2 sons + 2 daughters each)
   D1 --> T2
   T2 ==> Off
 ```
@@ -171,7 +171,7 @@ graph TD
     - moved to new selection scheme.
 - Report
   - [x] positive qtl lost
-    - [x] my: potents, e.g., sum of the positive QTL
+    - [x] my: potentials, e.g., sum of the positive QTL
     - [x] using proportions lost
   - [x] plot $\Delta G$ against inbreeding
   - [x] add x, y labels to the plots
@@ -202,12 +202,12 @@ graph TD
   subgraph "Stage 2"
     Off --> |Mass, ped, or GS| S2[20 selected sires]
     Off --> |Mass, ped, or GS| D2[50 selected dams]
-    S2 --> T3(F6-20 fullsibs: 2 sons + 2 daughters each)
+    S2 --> T3(F6-20 full sibs: 2 sons + 2 daughters each)
     D2 --> T3
     T3 ==> Off
   end
   subgraph "Stage 1"
-    S1 --> T2(F1-5 fullsib: 2 sons + 2 daughers each)
+    S1 --> T2(F1-5 full sib: 2 sons + 2 daughters each)
     D1 --> T2
     T2 ==> Off
     Off --> |Random| S1[20 selected sires]
@@ -246,37 +246,9 @@ graph TD
 - [ ] share 6 figures
 - [ ] $\Delta\overline G$
 
-### About quick $F$ calculation
+## Notes
 
-- [x] A random pedigree for tests
-- [x] Unique allele assignment for the pedigree genotypes, default 1000 loci
-- [x] Random drop the genotypes according the pedigree
-  - [x] Calculate approximate $F$ also
-- [ ] The `quickF` function
-  - [ ] record mean $F$, or $\tilde F$
-  - [ ] iteration stops when $\delta = \sum(\mathrm{abs}(\tilde F - F)) < \epsilon$.
-    - [ ] Check the trend of $\delta$
-  - [ ] return the exact value of the first 10 generations
-  - [ ] return $\tilde F$ of the rest
-- [ ] Test speed using random populations
-
-#### Best time for $F$ calculation
-
-- Population size: 200
-- Half males, half females
-- Totally random mating
-- Best time from `@benchmark` of `BenchmarkTools`
-
-| $N_g$ | o/ dict (ms) | w/ dict |
-| --: | --: | --: |
-| 1 | 0.81 | 1.00 |
-| 2 | 3.14 | 3.59 |
-| 3 | 3.06 | 3.61 |
-| 4 | 12.2 | 13.2 |
-| 5 | 49.4 | 48.2 |
-| 6 | 203 | 157 |
-| 7 | 817 | 190 |
-| 8 | 3270 | 1160 |
-| 9 | 13155 | 3010 |
-| 10 | 53108 | 7722 |
-| 11 | 210872 | 18562 |
+- Create a meeting session
+  - only record the action point, and conclusions.
+  - meeting summaries are in separate notebooks
+- Focus on paper outputs.
