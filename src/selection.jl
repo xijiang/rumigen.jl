@@ -71,7 +71,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
             end
             animalModel(ped, giv, h²) # default using :grt as fixed effect
         else
-            ped.ebv = ped.pht
+            ped.ebv = disallowmissing(ped.pht)
         end
         pm = repeat(prt4ng(ped, nsir, ndam), outer = nsib)
         drop(agt, ogt, pm, lms)
@@ -84,6 +84,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
                        tbv = tbv, 
                        pht = pht, ebv = 0., F = 0.)
         append!(ped, df)
+
         mp || (ped.pht[ped.sex .== 1] .= missing)
         agt = nothing
         nc += nsib * nfam * 2
