@@ -149,3 +149,8 @@ function sum_c140ad(dir, bar)
         end
     end
 end
+
+function overnight()
+    xps_65be72(debug = false)
+    xps_c140ad(debug = false)
+end

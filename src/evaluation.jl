@@ -167,20 +167,23 @@ function idealPop(xy, grt, lmp)
     qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
     efct = lmp.efct[lmp.qtl]
     best = sum(efct[efct .> 0])
-    ideal, va, np, nn = Float64[], Float64[], Int64[], Int64[]
+    ideal, va, np, nn, fixed = Float64[], Float64[], Int64[], Int64[], Set{Int64}()
     for ig in sort(unique(grt))
         iqg = qg[:, grt .== ig] # QTL genotypes of the ith generation
         plost, nlost = 0, 0  # positive and negative QTL lost
         for (i, v) in enumerate(efct)
+            i ∈ fixed && continue
             if v > 0
                 if all(iqg[i, :] .== 0)
                     best -= v
                     plost += 1
+                    push!(fixed, i)
                 end
             else
-                if all(iqg[i, :] .== 1)
+                if all(iqg[i, :] .== 2)
                     best += v
                     nlost += 1
+                    push!(fixed, i)
                 end
             end
         end
