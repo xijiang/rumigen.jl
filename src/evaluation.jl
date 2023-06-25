@@ -202,7 +202,7 @@ function idealPop(xy, grt, lmp)
         push!(va, vv[1])
         push!(np, plost)    # number of positive loci lost
         push!(nn, nlost)    # number of negative loci lost
-        append!(bins, histfrq(p, 25))
+        append!(bins, histfrq(vec(p), 25))
     end
     ideal, va, np, nn, bins
 end
