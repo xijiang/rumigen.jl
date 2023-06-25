@@ -158,7 +158,7 @@ function sum_c140ad(dir, bar)
     end
 end
 
-function overnight()
-    xps_65be72(debug = false, nrpt = 200, keep = true)
-    xps_c140ad(debug = false, nrpt = 200, keep = true)
+function overnight(; nrepeats = 100)
+    xps_65be72(debug = false, nrpt = nrepeats, keep = true)
+    xps_c140ad(debug = false, nrpt = nrepeats, keep = true)
 end
