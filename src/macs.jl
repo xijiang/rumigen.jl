@@ -24,13 +24,13 @@ end
 """
     function read_macs(file)
 ---
-Read genotypes and physical positions from simulation results of `macs`.
-Returns
+Read genotypes and physical positions from simulation results of `macs`. Returns
 - genotypes of Array{Int8, 2}
 - physical positions and
 - allele frequencies
 
-When `trans` is `true`, the genotypes are transposed, i.e., of `nLoci × nHap`.
+When `trans` is `true`, the genotypes are transposed, i.e., to of `nLoci ×
+nHap`.
 """
 function read_macs(file, trans = false)
     gt, ps = Int8[], Int[]
@@ -52,12 +52,15 @@ function read_macs(file, trans = false)
 end
 
 """
-    function macs2xy(dir)
-Convert `MaCS` simulation results into `XY` format.  The `MaCS` files 
-are of chr.chr-number and info.chr-number in `dir`.  The merged file are
-stored in `dir/../`. The genotypes are of `nID x nLoci`, or `header.t = 1`.
+    function macs2xy(dir; swap = false)
+Convert `MaCS` simulation results into `XY` format.  The `MaCS` files are of
+chr.chr-number and info.chr-number in `dir`.  The merged file are stored in
+`dir/../`. The genotypes are of `nID x nLoci`, or `header.t = 1`.
+
+When `swap` is `true`, randomly swap the allele symbols of every other loci,
+i.e., 0 <--> 1. (2023-06-24)
 """
-function macs2xy(dir)
+function macs2xy(dir; swap = false)
     bar = randstring(5)         # barcode of this simulation
     tprintln("  - Collect founder data {cyan}$bar{/cyan} from MaCS in {cyan}$dir{/cyan} of chromosome:")
     isdir(dir) || error("$dir not exists")
@@ -79,6 +82,12 @@ function macs2xy(dir)
             tprint(" $c")
             chr = joinpath(dir, "chr.$c")
             gt, ps, fq = read_macs(chr)
+            if swap # such that the allele frequencies has a 'U' shaped distribution
+                for i in 1:2:size(gt, 2)
+                    (gt[:, i] = 1 .- gt[:, i])
+                    fq[i] = 1 - fq[i]
+                end
+            end
             tid  = size(gt, 1)
             tlc += size(gt, 2)
             write(io, gt)

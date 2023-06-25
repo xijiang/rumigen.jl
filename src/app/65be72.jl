@@ -1,7 +1,7 @@
 # echo "No male phenotypes, more intensive phenotypic selection" | md5sum
-function xps_65be72(; debug = true)
+function xps_65be72(; debug = true, nrpt = 200, keep = false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
-    nsir, ndam, pres, ngrt, nrpt, dist = 20, 50, 5, 20, 200, Normal()
+    nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/65be72"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
@@ -12,8 +12,8 @@ function xps_65be72(; debug = true)
         @warn "Debugging"
     else
         @info "Simulation begins"
-        #foo = cattle_base(ppsz, rst)                    # ==> base
-        foo = "fRpPu"
+        isdir(fdr) && rm(fdr, recursive = true, force = true)
+        foo = cattle_base(ppsz, fdr)                    # ==> base
         for irpt in 1:nrpt
             println()
             @info "Repeat $irpt of $nrpt"
@@ -40,7 +40,7 @@ function xps_65be72(; debug = true)
                             ebv = true, gs = true, mp = false)
 
             sum_65be72(dir, bar)
-            rm.(glob("$dir/$bar-*"))
+            keep || rm.(glob("$dir/$bar-*"))
         end
     end
 end
@@ -54,16 +54,19 @@ function sum_65be72(dir, bar)
                             :tbv => var => :vbv,
                             :F => mean => :mF,
                             [:ebv, :tbv] => cor => :cor)
+        ideal, va, plst, nlst, bns = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/65be72.bin", "a") do io
-            ideal, va, _, _ = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
             write(io, sp.mbv[2:end],
                       sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
                       sp.mF[2:end],
                       sp.cor[2:end],
                       ideal[2:end],
-                      va[2:end])
-            # write(io, plst[2:end])
-            # write(io, nlst[2:end])
+                      va[2:end],
+                      plst[2:end],  # no. of positive qtl lost
+                      nlst[2:end])
+        end
+        open("$dir/65be72.bns", "a") do io
+            write(io, bns)
         end
     end
 end
@@ -74,9 +77,9 @@ echo Three phenotype scenarios plus pedgree and gs | md5sum
 ```
 -> c140add3300cbfeddb2c1da06f8eb31a
 """
-function xps_c140ad(; debug = true)
+function xps_c140ad(; debug = true, nrpt = 200, keep = false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
-    nsir, ndam, pres, ngrt, nrpt, dist = 20, 50, 5, 20, 200, Normal()
+    nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/c140ad"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
@@ -87,8 +90,8 @@ function xps_c140ad(; debug = true)
         @warn "Debugging"
     else
         # base and founders
-        #foo = cattle_base(ppsz, rst)                    # ==> base
-        foo = "fRpPu"
+        isdir(fdr) && rm(fdr, recursive=true, force=true)
+        foo = cattle_base(ppsz, fdr)                    # ==> base
         for irpt in 1:nrpt
             println()
             @info "Repeat $irpt of $nrpt"
@@ -124,7 +127,7 @@ function xps_c140ad(; debug = true)
                             ebv = true, gs = true)
 
             sum_c140ad(dir, bar)
-            rm.(glob("$dir/$bar-*"))
+            keep || rm.(glob("$dir/$bar-*"))
         end
     end
 end
@@ -138,19 +141,24 @@ function sum_c140ad(dir, bar)
                             :tbv => var => :vbv,
                             :F => mean => :mF,
                             [:ebv, :tbv] => cor => :cor)
+        ideal, va, plst, nlst, bns = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/c140ad.bin", "a") do io
-            ideal, va, _, _ = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
             write(io, sp.mbv[2:end],
                       sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
                       sp.mF[2:end],
                       sp.cor[2:end],
                       ideal[2:end],
-                      va[2:end])
+                      va[2:end],
+                      plst[2:end],  # no. of positive qtl lost
+                      nlst[2:end])
+        end
+        open("$dir/c140ad.bns", "a") do io
+            write(io, bns)
         end
     end
 end
 
 function overnight()
-    xps_65be72(debug = false)
-    xps_c140ad(debug = false)
+    xps_65be72(debug = false, nrpt = 200, keep = true)
+    xps_c140ad(debug = false, nrpt = 200, keep = true)
 end

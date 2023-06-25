@@ -43,8 +43,8 @@ Generate a cattle base population with MaCS.
 function cattle_base(nid, rst)
     tprintln("Generating a base population with MaCS")
     macs = make_macs(tdir = rst)
-    tmp = cattle_genome(macs, nid, dir = "$rst/base")
-    macs2xy(tmp)  # returns foo
+    tmp = cattle_genome(macs, nid, dir = "$rst")
+    macs2xy(tmp, swap = true)  # returns foo
 end
 
 """

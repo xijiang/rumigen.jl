@@ -342,7 +342,7 @@ function xy2gp(ixy::AbstractString, ids, loc, σₑ)
     uhp2gp(hap, loc, σₑ)
 end
 
-function appendxy(xy::AbstractString, mat::AbstractArray)
+function appendxy!(xy::AbstractString, mat::AbstractArray)
     hdr = readhdr(xy)
     mt, et, _, ir, ic = xyhdr(hdr)
     jr, jc = size(mat)

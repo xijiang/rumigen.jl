@@ -84,3 +84,19 @@ function pushRCV!(R, C, V, r, c, v)
     push!(C, c)
     push!(V, v)
 end
+
+"""
+    function histfrq(v::Vector, nb)
+Return the frequency of `v` in `nb` bins.
+"""
+function histfrq(v::Vector, nb)
+    l, h = extrema(v)
+    w = (h - l) / nb
+    tbl = zeros(Int, nb + 1)
+    for x in v
+        i = Int(floor((x - l) / w)) + 1
+        tbl[i] += 1
+    end
+    tbl[end-1] += 1
+    tbl[1:nb]
+end

@@ -6,6 +6,7 @@ a random pairs of `nsir` sires and `ndam` dams for form full sibship
 families. One can use `repeat(pm, outer=nsib)` for a full next
 generation pedigree after this function.
 
+Note: this function is deprecated. Use `prt4ng` instead.
 """
 function pedng(ped, sel::Symbol, nsir, ndam)
     pg = maximum(ped.grt)
@@ -39,6 +40,10 @@ A simple selection strategy.
     - By default, `:ebv` is of PEBV if to be calculated.
 - `h²` is calculated as `σₐ = 1`.
 - When `mp = false`, males' phenotypes are set to `missing`.
+
+## Update 2023-06-13
+- only update EBV of the last generation
+  - Or, the accuracy of EBV will be overestimated for the earlier generations.
 """
 function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
                          ebv = false,
@@ -55,12 +60,13 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
     sibs = [ones(Int, nsib ÷ 2); zeros(Int, nsib - nsib ÷ 2)]
     sex = repeat(sibs, outer = nfam)
     ser = splitext(xy)[1] * "-mid.ser" # to store mid-results for A⁻¹
+    
     @info "Selection on $xy, for $ngrt generations"
-
     for igrt in 1:ngrt
         print(" $igrt")
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
         ogt = zeros(et, nr, nfam * nsib * 2)
+        oebv = ped.ebv[ped.grt .< ped.grt[end]]
         if random # update EBV
             ped.ebv = rand(nrow(ped))
         elseif ebv
@@ -73,9 +79,10 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
         else
             ped.ebv = disallowmissing(ped.pht)
         end
+        ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
         pm = repeat(prt4ng(ped, nsir, ndam), outer = nsib)
         drop(agt, ogt, pm, lms)
-        appendxy(xy, ogt)
+        appendxy!(xy, ogt)
         tbv, pht = uhp2gp(ogt, lmp, σₑ)
         df = DataFrame(id = nrow(ped) + 1 : nrow(ped) + nsib * nfam,
                        pa = pm[:, 1], ma = pm[:, 2], 

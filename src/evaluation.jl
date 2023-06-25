@@ -19,6 +19,13 @@ function simpleBLUP(ped, giv, h²)
     ped.ebv = ebv
 end
 
+"""
+    function animalModel(ped, giv, h²; fix = [:grt])
+
+Calculate the BLUP of a trait with a pedigree, giv and a heritability. The model
+use `:grt` as fixed effects and `:id` as random effects. Note this function is
+updating all animals' EBV. You can restore the original EBV by pre-saving them.
+"""
 function animalModel(ped, giv, h²; fix = [:grt])
     λ = (1.0 - h²) / h²
     p = .!ismissing.(ped.pht) # only for the phenotyped animals
@@ -167,7 +174,9 @@ function idealPop(xy, grt, lmp)
     qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
     efct = lmp.efct[lmp.qtl]
     best = sum(efct[efct .> 0])
-    ideal, va, np, nn, fixed = Float64[], Float64[], Int64[], Int64[], Set{Int64}()
+    # also use float for qtl fixation counting for ease of retrieval
+    ideal, va, np, nn, fixed = Float64[], Float64[], Float64[], Float64[], Set{Int64}()
+    bins = Float64[]
     for ig in sort(unique(grt))
         iqg = qg[:, grt .== ig] # QTL genotypes of the ith generation
         plost, nlost = 0, 0  # positive and negative QTL lost
@@ -193,8 +202,9 @@ function idealPop(xy, grt, lmp)
         push!(va, vv[1])
         push!(np, plost)    # number of positive loci lost
         push!(nn, nlost)    # number of negative loci lost
+        append!(bins, histfrq(p, 25))
     end
-    ideal, va, np, nn
+    ideal, va, np, nn, bins
 end
 
 """
