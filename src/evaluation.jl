@@ -176,7 +176,6 @@ function idealPop(xy, grt, lmp)
     best = sum(efct[efct .> 0])
     # also use float for qtl fixation counting for ease of retrieval
     ideal, va, np, nn, fixed = Float64[], Float64[], Float64[], Float64[], Set{Int64}()
-    bins = Float64[]
     for ig in sort(unique(grt))
         iqg = qg[:, grt .== ig] # QTL genotypes of the ith generation
         plost, nlost = 0, 0  # positive and negative QTL lost
@@ -202,9 +201,8 @@ function idealPop(xy, grt, lmp)
         push!(va, vv[1])
         push!(np, plost)    # number of positive loci lost
         push!(nn, nlost)    # number of negative loci lost
-        append!(bins, histfrq(vec(p), 25))
     end
-    ideal, va, np, nn, bins
+    ideal, va, np, nn
 end
 
 """

@@ -97,6 +97,6 @@ function histfrq(v::Vector, nb)
         i = Int(floor((x - l) / w)) + 1
         tbl[i] += 1
     end
-    tbl[end-1] += 1
+    tbl[end-1] += tbl[end]
     tbl[1:nb]
 end

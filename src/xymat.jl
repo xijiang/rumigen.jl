@@ -353,3 +353,13 @@ function appendxy!(xy::AbstractString, mat::AbstractArray)
         write(io, [ic + jc])
     end
 end
+
+"""
+    function xymap(xy::AbstractString)
+Map the entire matrix in `xy` and return the Matrix.
+"""
+function xymap(xy::AbstractString)
+    mt, et, mj, ir, ic = xyhdr(readhdr(xy))
+    mt == 'F' || error("Only support F matrix")
+    Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
+end
