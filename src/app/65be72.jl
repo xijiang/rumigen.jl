@@ -10,10 +10,9 @@ function count_ones(dir, foo, bar, ppsz)
             for x in frq
                 cnt[x+1] += 1
             end
-            open("$dir/$foo-frq.bin", "a") do io
+            open("$dir/freq.bin", "a") do io
                 write(io, cnt)
             end
-            @show typeof(cnt)
         end
     end
 end
