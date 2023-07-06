@@ -38,7 +38,7 @@ A simple selection strategy.
     - If `ebv = true`, selection is on `:ebv`.
     - If `gs = true`, `:ebv` is of GEBV
     - By default, `:ebv` is of PEBV if to be calculated.
-- `h²` is calculated as `σₐ = 1`.
+- `h²` is calculated with `σₐ = 1`, and given `σₑ`.
 - When `mp = false`, males' phenotypes are set to `missing`.
 
 ## Update 2023-06-13
@@ -99,4 +99,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
     println()
     ped.F = inbreeding(xy, lmp.chip)
     serialize("$(xy[1:end-3])+ped.ser", ped)
+end
+
+function optiSelection()
 end

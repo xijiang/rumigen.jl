@@ -100,3 +100,28 @@ function histfrq(v::Vector, nb)
     tbl[end-1] += tbl[end]
     tbl[1:nb]
 end
+
+"""
+    function count_ones(dir, foo, bar, ppsz)
+Count the number of QTL allele 1 of each locus in each generation in file
+`dir/foo-sel.xy` for each `sel` in `bar`. QTL loci are defined in
+`dir/foo-map.ser`. Assume that the population size is constant of `ppsz`.
+"""
+function count_ones(dir, foo, bar, ppsz)
+    nhp = 2ppsz
+    lmp = deserialize("$dir/$foo-map.ser")
+    for sel in bar
+        snp = xymap("$dir/$foo-$sel.xy")
+        qgt = isodd.(snp[lmp.qtl, :])
+        for i in 1:nhp:size(qgt, 2)
+            frq = sum(qgt[:, i:i+nhp-1], dims=2)
+            cnt = zeros(Int, nhp + 1)
+            for x in frq
+                cnt[x+1] += 1
+            end
+            open("$dir/freq.bin", "a") do io
+                write(io, cnt)
+            end
+        end
+    end
+end

@@ -1,22 +1,3 @@
-function count_ones(dir, foo, bar, ppsz)
-    nhp = 2ppsz
-    lmp = deserialize("$dir/$foo-map.ser")
-    for sel in bar
-        snp = xymap("$dir/$foo-$sel.xy")
-        qgt = isodd.(snp[lmp.qtl, :])
-        for i in 1:nhp:size(qgt, 2)
-            frq = sum(qgt[:, i:i+nhp-1], dims=2)
-            cnt = zeros(Int, nhp + 1)
-            for x in frq
-                cnt[x+1] += 1
-            end
-            open("$dir/freq.bin", "a") do io
-                write(io, cnt)
-            end
-        end
-    end
-end
-
 # echo "No male phenotypes, more intensive phenotypic selection" | md5sum
 function xps_65be72(; debug=true, nrpt=200, keep=false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0

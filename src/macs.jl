@@ -7,6 +7,9 @@ Clone `MaCS` into a temp dir under `tdir` and compile it into `tdir`.
 - this function return the absolute path of newly compiled `macs` in the end.
 """
 function make_macs(; tdir=pwd())
+    macs = Sys.which("macs")
+    isnothing(macs) || return macs
+    
     macs = joinpath(abspath(tdir), "macs")
     @debug "Making macs"
     isfile(macs) && return macs
