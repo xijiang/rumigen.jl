@@ -42,7 +42,8 @@ function xps_2c6bee(; debug=true, nrpt=200, keep=false)
     end
 end
 
-function xps_2c6bee_debug()
+function debug_2c6bee()
+    f0, df = 0.0266642175, 0.01
     test = "rst/test-suite"
     ped = deserialize("$test/bar-uhp+ped.ser")
     lmp = deserialize("$test/bar-map.ser")
@@ -58,11 +59,10 @@ function xps_2c6bee_debug()
     K 
 end
 
-function kt(t, ne)
-    ΔF = 1 / (2 * ne)
+function kt(t, df; f0 = 0.0)
     K = 0
     for i in 1:t
-        K += ΔF * (1 - K)
+        K += df * (1 - f0 - K)
     end
     return K
 end

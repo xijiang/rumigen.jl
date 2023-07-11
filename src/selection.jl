@@ -1,3 +1,4 @@
+
 """
     function pedng(ped, sel::Symbol, nsir, ndam)
 Given a pedigree `ped`, select `nsir` sires and `ndam` dams from 
@@ -99,7 +100,4 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
     println()
     ped.F = inbreeding(xy, lmp.chip)
     serialize("$(xy[1:end-3])+ped.ser", ped)
-end
-
-function optiSelection()
 end
