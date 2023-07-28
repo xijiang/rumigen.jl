@@ -154,11 +154,13 @@ function uhp2gp(hp, loc, σₑ)
 end
 
 """
-    function idealPop(xy, grt, lmp)
+    function idealPop(xy, grt, lmp; maf = 0.2)
 Given a genotype file `xy`, generation info `grt` and a linkage map `lmp`,
 calculate the maximum level of an ideal population.
+
+Add QTL change for allele frequencies in (0, maf = 0.2). 2023-07-17
 """
-function idealPop(xy, grt, lmp)
+function idealPop(xy, grt, lmp; maf = 0.2)
     # requirement check
     hdr = readhdr(xy)
     mt, et, mj, ir, ic = xyhdr(hdr)
@@ -172,25 +174,30 @@ function idealPop(xy, grt, lmp)
         Int8.(isodd.(Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)))
     end
     qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
+    frq = mean(qg, dims = 2) / 2.
     efct = lmp.efct[lmp.qtl]
     best = sum(efct[efct .> 0])
     # also use float for qtl fixation counting for ease of retrieval
     ideal, va, np, nn, fixed = Float64[], Float64[], Float64[], Float64[], Set{Int64}()
+    nmp, nmn = Float64[], Float64[]
     for ig in sort(unique(grt))
         iqg = qg[:, grt .== ig] # QTL genotypes of the ith generation
         plost, nlost = 0, 0  # positive and negative QTL lost
+        pmlst, nmlst = 0, 0  # positive and negative QTL lost of maf
         for (i, v) in enumerate(efct)
             i ∈ fixed && continue
             if v > 0
                 if all(iqg[i, :] .== 0)
                     best -= v
                     plost += 1
+                    (frq[i] < maf || frq[i] > 1 - maf) && (pmlst += 1)
                     push!(fixed, i)
                 end
             else
                 if all(iqg[i, :] .== 2)
                     best += v
                     nlost += 1
+                    (frq[i] < maf || frq[i] > 1 - maf) && (nmlst += 1)
                     push!(fixed, i)
                 end
             end
@@ -201,8 +208,10 @@ function idealPop(xy, grt, lmp)
         push!(va, vv[1])
         push!(np, plost)    # number of positive loci lost
         push!(nn, nlost)    # number of negative loci lost
+        push!(nmp, pmlst)   # number of positive loci lost of maf
+        push!(nmn, nmlst)   # number of negative loci lost of maf
     end
-    ideal, va, np, nn
+    ideal, va, np, nn, nmp, nmn
 end
 
 """

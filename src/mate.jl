@@ -35,6 +35,45 @@ function randomMate(sires, dams; noff = 0)
 end
 
 """
+    function randomMate(ped::DataFrame, noff)
+Create mate pairs according to ID's contribution stated in `ped.c`.  `ped.c` is
+calculated from `myopt` function, where `sum(c[sires]) == 0.5`, and
+`sum(c[dams]) == 0.5`.  `noff` is the number of offspring to be generated.
+Returns the mating pairs. Here it suppose that a female can mate several males,
+for example, with MOET.
+"""
+function randomMate(ped::DataFrame, noff)
+    function nrpt(c, noff)
+        m = noff / sum(c)
+        nr = Int.(round.(c * m))
+        x = sum(nr) - noff
+        if x > 0  # to make sure sum(nr) == noff
+            nr[argmax(nr)] -= x
+        else
+            nr[argmin(nr)] -= x
+        end
+        nr
+    end
+
+    ["sex", "c"] ⊆ names(ped) || error("Not a proper pedigree")
+    nid = size(ped, 1)
+    ped.id = 1:nid
+    gd = groupby(ped, :sex) # group 1 for females and 2 for males.
+    dam = gd[1].id[findall(gd[1].c .> 0)]
+    sir = gd[2].id[findall(gd[2].c .> 0)]
+    pa, ma = Int[], Int[]
+    nr = nrpt(ped.c[sir], noff)
+    for (id, r) ∈ eachrow([sir nr])
+        append!(pa, repeat([id], r))
+    end
+    nr = nrpt(ped.c[dam], noff)
+    for (id, r) ∈ eachrow([dam nr])
+        append!(ma, repeat([id], r))
+    end
+    sortslices([pa shuffle(ma)], dims=1, by=x -> (x[1], x[2]))
+end
+
+"""
     function crossovers(lms)
 Give a linkage map summary `lms`, which can be from `summap`, this
 function return a vector of crossover points along the whole genome.

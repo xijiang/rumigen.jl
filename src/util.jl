@@ -125,3 +125,34 @@ function count_ones(dir, foo, bar, ppsz)
         end
     end
 end
+
+"""
+    function randomc(sex, nsir, ndam)
+Given a list of `sex`, where males are indicated as `1`, females are indicated
+as `0`, this function returns a vector of `c` values for each animal. `nsir` and
+`ndam` are the number of sires and dams to be randomly selected. The `c` values
+are randomly selected from a uniform distribution. The sum of `c` values for
+selected sires and dams are normalized to `0.5`, respectively. The rest of the
+animals have `c` values of `0`.
+"""
+function randomc(sex, nsir, ndam)
+    c = zeros(length(sex))
+    sir = findall(sex .== 1)
+    dam = findall(sex .== 0)
+    cs = rand(nsir)
+    cs /= (2sum(cs))
+    cd = rand(ndam)
+    cd /= (2sum(cd))
+    c[shuffle(sir)[1:nsir]] = cs
+    c[shuffle(dam)[1:ndam]] = cd
+    c
+end
+
+function equalc(sex, nsir, ndam)
+    c = zeros(length(sex))
+    sir = findall(sex .== 1)
+    dam = findall(sex .== 0)
+    c[shuffle(sir)[1:nsir]] .= 0.5 / nsir
+    c[shuffle(dam)[1:ndam]] .= 0.5 / ndam
+    c
+end

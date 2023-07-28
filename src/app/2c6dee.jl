@@ -21,7 +21,6 @@ function xps_2c6bee(; debug=true, nrpt=200, keep=false)
         simpleSelection("$dir/$bar-uhp.xy", ped, lmp, nsir, ndam, pres, σₑ,
             random=true, mp=false)
 
-
         # phenotype selection not possible as no male phenotypes
 
         # Pedigree selection
@@ -42,27 +41,50 @@ function xps_2c6bee(; debug=true, nrpt=200, keep=false)
     end
 end
 
-function debug_2c6bee()
-    f0, df = 0.0266642175, 0.01
-    test = "rst/test-suite"
+function cbvdist(ebv, sex, A, npa, nma; nsmpl = 10000, rnd = true)
+    mbv, cn = zeros(nsmpl), zeros(nsmpl)
+    for i in 1:nsmpl
+        c = rnd ? randomc(sex, npa, nma) : equalc(sex, npa, nma)
+        mbv[i] = c'ebv
+        cn[i] = c'A * c / 2
+    end
+    return mbv, cn
+end
+
+function spl_2c6bee(dir)
+    test = "$dir/rst/test-suite"
     ped = deserialize("$test/bar-uhp+ped.ser")
-    lmp = deserialize("$test/bar-map.ser")
-    gt = xymap("$test/bar-uhp.xy")
-    lms = sumMap(lmp)
-    nsir, ndam, nfam, nsib = 20, 50, 50, 4
-    agt = xymap("$test/bar-uhp.xy")
     giv = A⁻¹(ped, "$test/bar-mid.ser")
     animalModel(ped, giv, .25)
+    lst = 1001:1200
+    A = Amat(ped, m = size(ped, 1))
+    return ped.ebv[lst], ped.sex[lst], A[lst, lst]
+end
+
+function debug_2c6bee(dir)
+    f0, df = 0.0266642175, 0.012
+    return fungencont(dat, A[1001:1200, 1001:1200], 0.13)
     cor(ped.pht, ped.ebv)
+    dat = [lpd.ebv lpd.sex .== 1 lpd.sex .== 0]
+    K = Kt(6, df)
+    lmp = deserialize("$test/bar-map.ser")
+    gt = xymap("$dir/$test/bar-uhp.xy")
+    lms = sumMap(lmp)
+    nsir, ndam, nfam, nsib = 20, 50, 50, 4
+    agt = xymap("$dir/$test/bar-uhp.xy")
     dat = [ped.ebv ped.sex .== 1 ped.sex .== 0]
-    A = Amat(ped, m = nrow(ped))
     K 
 end
 
-function kt(t, df; f0 = 0.0)
-    K = 0
-    for i in 1:t
-        K += df * (1 - f0 - K)
-    end
-    return K
+"""
+    function restraint(t, df)
+This function return the restraint for generation `t` with `ΔF = df` and `k₀ =
+0`.
+"""
+function restraint(t, df; k = 0.0)
+    #for i in 1:t
+    #    k += df * (1 - k)
+    #end
+    # above is equavalent to
+    2(1 - (1 - k) * (1 - df)^(t-1))
 end
