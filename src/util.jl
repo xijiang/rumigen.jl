@@ -19,8 +19,8 @@ The first level of each factor is ignored. Instead, a intercept is added.
 This is to make the matrix full rank.
 """
 function incidence_matrix(df::DataFrame)
-    n = nrow(df)
-    u = [sort(unique(df[:, i]))[2:end] for i in 1:ncol(df)] # can also be 1:end-1, which has more codes than 2:end
+    n = size(df, 1)
+    u = [sort(unique(df[:, i]))[2:end] for i in eachindex(names(df))] # can also be 1:end-1, which has more codes than 2:end
     m = sum([length(u[i]) for i in eachindex(u)])
     x, a = [ones(n) zeros(n, m)], 2
     for i in eachindex(u)
@@ -102,16 +102,17 @@ function histfrq(v::Vector, nb)
 end
 
 """
-    function count_ones(dir, foo, bar, ppsz)
-Count the number of QTL allele 1 of each locus in each generation in file
-`dir/foo-sel.xy` for each `sel` in `bar`. QTL loci are defined in
-`dir/foo-map.ser`. Assume that the population size is constant of `ppsz`.
+    function pos_qtl_frq(dir, bar, sls, ppsz)
+Count the number of positive QTL alleles of each locus in each generation in
+file `dir/bar-s.xy` for each `s` in `sls`. When QTL effect is positive,
+count ones, or count zeros. QTL loci are defined in `dir/bar-map.ser`. Assume
+that the population size is constant of `ppsz`.
 """
-function count_ones(dir, foo, bar, ppsz)
+function pos_qtl_frq(dir, bar, sls, ppsz)
     nhp = 2ppsz
-    lmp = deserialize("$dir/$foo-map.ser")
-    for sel in bar
-        snp = xymap("$dir/$foo-$sel.xy")
+    lmp = deserialize("$dir/$bar-map.ser")
+    for s in sls
+        snp = xymap("$dir/$bar-$s.xy")
         qgt = isodd.(snp[lmp.qtl, :])
         for i in 1:nhp:size(qgt, 2)
             frq = sum(qgt[:, i:i+nhp-1], dims=2)
@@ -119,8 +120,15 @@ function count_ones(dir, foo, bar, ppsz)
             for x in frq
                 cnt[x+1] += 1
             end
-            open("$dir/freq.bin", "a") do io
+            open("$dir/fof.bin", "a") do io # frequency of frequency
                 write(io, cnt)
+            end
+            pos = lmp.efct[lmp.qtl] .> 0
+            for i in eachindex(frq)
+                pos || (frq[i] = nhp - frq[i])
+            end
+            open("$dir/pfq.bin", "a") do io
+                write(io, frq)
             end
         end
     end

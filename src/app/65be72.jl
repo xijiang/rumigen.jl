@@ -40,7 +40,7 @@ function xps_65be72(; debug=true, nrpt=200, keep=false)
                 ebv=true, gs=true, mp=false)
 
             sum_65be72(dir, bar)
-            count_ones(dir, bar, ["sgs", "spd"], ppsz)
+            qtl_count_ones(dir, bar, ["sgs", "spd"], ppsz)
             keep || rm.(glob("$dir/$bar-*"))
         end
     end
@@ -125,7 +125,7 @@ function xps_c140ad(; debug=true, nrpt=200, keep=false)
                 ebv=true, gs=true)
 
             sum_c140ad(dir, bar)
-            count_ones(dir, bar, ["pta", "ptb", "ptc", "sgs", "spd"], ppsz)
+            qtl_count_ones(dir, bar, ["pta", "ptb", "ptc", "sgs", "spd"], ppsz)
             keep || rm.(glob("$dir/$bar-*"))
         end
     end

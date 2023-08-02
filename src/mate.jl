@@ -130,7 +130,7 @@ function sumMap(lmp; cM=1e6)
     for grp in groupby(lmp, :chr)
         chr = first(grp).chr
         len = (last(grp).pos - first(grp).pos) / cM / 100
-        nlc = nrow(grp)
+        nlc = size(grp, 1)
         push!(df, (chr, len, nlc, bgn))
         bgn += nlc
     end
@@ -192,7 +192,7 @@ function randrop!(gt, ped)
             oh[i] = pg[i, rand(1:2)]
         end
     end
-    (nlc, nhp), nid = size(gt), nrow(ped)
+    (nlc, nhp), nid = size(gt), size(ped, 1)
     nhp == 2nid || error("Haplotypes do not match pedigree")
     F = zeros(nid)
     for id in 1:nid
@@ -374,7 +374,7 @@ function drop(php::String, gt::String, pa::AbstractVector{Int}, ma::AbstractVect
     # update pedigree
     nlc, nid = size(og)
     nid ÷= 2
-    ndum = ncol(ped) - 4
+    ndum = size(ped, 2) - 4
     sex = rand(0:1, nid)
     for id in 1:nid
         push!(ped, (ig, pa[pm[id, 1]], ma[pm[id, 2]-nsr], sex[id], zeros(ndum)...))

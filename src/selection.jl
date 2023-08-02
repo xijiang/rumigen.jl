@@ -5,7 +5,7 @@ Given a pedigree `ped`, select `nsir` sires and `ndam` dams from
 the last generation on `ped` column `sel`. This function returen
 a random pairs of `nsir` sires and `ndam` dams for form full sibship
 families. One can use `repeat(pm, outer=nsib)` for a full next
-generation pedigree after this function.
+generation pedigree alrer this function.
 
 Note: this function is deprecated. Use `prt4ng` instead.
 """
@@ -19,8 +19,10 @@ function pedng(ped, sel::Symbol, nsir, ndam)
 end
 
 function prt4ng(ped, nsir, ndam)
-    pg = maximum(ped.grt)
-    pp = groupby(sort(ped[ped.grt .== pg, :], :ebv, rev = true), :sex)
+    [:ebv, :sex, :grt, :id] ⊆ propertynames(ped) || error("Not a proper pedigree")
+    pool = filter(row -> row.grt == ped.grt[end], ped)
+    sort!(pool, :ebv, rev = true)
+    pp = groupby(pool, :sex)
     ma = pp[1].id[1:ndam]
     pa = pp[2].id[1:nsir]
     randomMate(pa, ma)
@@ -54,7 +56,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
                          )
     hdr, h² = readhdr(xy), 1 / (1 + σₑ^2)
     mt, et, mj, nr, nc = xyhdr(hdr)
-    (mt == 'F' && mj == 0 && nc == 2nrow(ped)) || error("$xy, or pedigree not right")
+    (mt == 'F' && mj == 0 && nc == 2size(ped, 1)) || error("$xy, or pedigree not right")
     lms, nfam = sumMap(lmp), max(nsir, ndam)
     nsib = sum(ped.grt .== ped.grt[end]) ÷ nfam
     # to generate the same number of animals in the last generation
@@ -69,7 +71,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
         ogt = zeros(et, nr, nfam * nsib * 2)
         oebv = ped.ebv[ped.grt .< ped.grt[end]]
         if random # update EBV
-            ped.ebv = rand(nrow(ped))
+            ped.ebv = rand(size(ped, 1))
         elseif ebv
             giv = if gs  # GEBV
                 grmiv(xy, lmp.chip)
@@ -85,7 +87,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
         drop(agt, ogt, pm, lms)
         appendxy!(xy, ogt)
         tbv, pht = uhp2gp(ogt, lmp, σₑ)
-        df = DataFrame(id = nrow(ped) + 1 : nrow(ped) + nsib * nfam,
+        df = DataFrame(id = size(ped, 1) + 1 : size(ped, 1) + nsib * nfam,
                        pa = pm[:, 1], ma = pm[:, 2], 
                        sex = sex, 
                        grt = ped.grt[end] + 1,
@@ -96,6 +98,50 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
         mp || (ped.pht[ped.sex .== 1] .= missing)
         agt = nothing
         nc += nsib * nfam * 2
+    end
+    println()
+    ped.F = inbreeding(xy, lmp.chip)
+    serialize("$(xy[1:end-3])+ped.ser", ped)
+end
+
+function optSelection(xy, ped, lmp, ngrt, σₑ; gs = false, dF = 0.011, k₀ = 0.)
+    hdr, h² = readhdr(xy), 1 / (1 + σₑ^2)
+    mt, et, mj, nr, nc = xyhdr(hdr)
+    (mt == 'F' && mj == 0 && nc == 2size(ped, 1)) || error("$xy, or pedigree not right")
+    lms = sumMap(lmp)
+    nid = sum(ped.grt .== ped.grt[end])
+    t = length(unique(ped.grt))
+    
+    @info "Selection on $(basename(xy)), for $ngrt generations"
+    for igrt ∈ 1:ngrt
+        print(" $igrt")
+        agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
+        ogt = zeros(et, nr, nid * 2)
+        oebv = ped.ebv[ped.grt .< ped.grt[end]]
+        A = gs ? grm(xy, lmp.chip) : Amat(ped)
+        giv = inv(A)
+        animalModel(ped, giv, h²) # default using :grt as fixed effect
+        ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
+        pool = size(A, 1) - nid + 1:size(A, 1) # ID of current generation
+        A₂₂ = view(A, pool, pool)
+        K = 2(1 - (1 - k₀) * (1 - dF) ^ t)
+        c = myopt(DataFrame(ebv=ped.ebv[pool], sex=ped.sex[pool]), A₂₂, K, silent=true)
+        pm = randomMate(DataFrame(sex=ped.sex[pool], c=c), nid) .+ (size(ped, 1) - nid)
+        drop(agt, ogt, pm, lms)
+        appendxy!(xy, ogt)
+        tbv, pht = uhp2gp(ogt, lmp, σₑ)
+        df = DataFrame(id = size(ped, 1) + 1: size(ped, 1) + size(pm, 1),
+                        pa = pm[:, 1], ma = pm[:, 2],
+                        sex = rand(0:1, nid),
+                        grt = ped.grt[end] + 1,
+                        tbv = tbv,
+                        pht = pht, ebv = 0., F = 0.
+                      )
+        append!(ped, df)
+        ped.pht[ped.sex .==1] .== missing
+        agt = nothing
+        nc += nid * 2
+        t += 1
     end
     println()
     ped.F = inbreeding(xy, lmp.chip)

@@ -72,7 +72,7 @@ function ped_D(ped; force = false)
         force ? select!(ped, Not([:D])) : return
     end
     #"F" ∈ names(ped) || ped_F(ped)
-    N = nrow(ped)
+    N = size(ped, 1)
     "F" ∈ names(ped) || (ped.F = diag(Amat(ped, m = N)))
     D = .5ones(N)
     for i in eachrow(ped)
@@ -108,8 +108,8 @@ This function is better for small pedigrees, and for demonstration only.
 The maximal matrix size is thus limited to 1000.
 One can try to set `m` to a bigger value if RAM is enough.
 """
-function Amat(ped; m = 1000)
-    N = nrow(ped)
+function Amat(ped; m = 30_000)
+    N = size(ped, 1)
     N > m && error("Pedigree size ($N > $m) too big")
     A = zeros(N, N) + I(N)
     for (i, (pa, ma)) in enumerate(eachrow(select(ped, :pa, :ma)))
@@ -237,6 +237,23 @@ function grmiv(xy::AbstractString, chip)
 end
 
 """
+    function grm(xy::AbstractString, chip)
+Calculate the genomic relationship matrix from file `xy`, and observable SNP information from `chip`.
+"""
+function grm(xy::AbstractString, chip)
+    hdr = readhdr(xy)
+    mt, et, mj, ir, ic = xyhdr(hdr)
+    mt == 'F' || error("File $xy is not a genotype file")
+    (et == Int8 || et == UInt16) || error("File $xy is not a valid genotype file")
+    hps = (mj == 0) ? Mmap.mmap(xy, Matrix{et}, (ir, ic), 24) :
+        Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)'
+    snps = view(hps, chip, :)
+    gt = (et == Int8) ? snps[:, 1:2:end] + snps[:, 2:2:end] :
+        Int8.(isodd.(snps[:, 1:2:end])) + Int8.(isodd.(snps[:, 2:2:end]))
+    grm(gt) + 0.01I
+end
+
+"""
     function A⁻¹(ped, ser)
 If `ped` is an expanded pedigree. The `A⁻¹` of `ped`'s previous version was
 calculated. This function will reuse the previous results of `D`, `RCV` for `T`,
@@ -256,7 +273,7 @@ function A⁻¹(ped, ser)
     else
         Int64[], Int64[], Float64[], Float64[]
     end
-    pid, nid = length(D), nrow(tpd)
+    pid, nid = length(D), size(tpd, 1)
 
     # New T
     for (id, (pa, ma)) in enumerate(eachrow(tpd))
@@ -284,7 +301,7 @@ function A⁻¹(ped, ser)
 end
 
 function initUSNP(ped; nlc = 1000)
-    tpd, nid = select(ped, :pa, :ma), nrow(ped)
+    tpd, nid = select(ped, :pa, :ma), size(ped, 1)
     nfdr = sum(iszero, tpd.pa) + sum(iszero, tpd.ma)
     et = nfdr < 256 ? UInt8 : UInt16
     gt, usnp = zeros(et, nlc, 2nid), 1
@@ -320,7 +337,7 @@ smaller than `ϵ = 1e-5`.
 """
 function fastF(ped; nlc = 1000, ϵ = 1e-3, inc = 10)
     grt = unique(ped.grt)
-    ngrt, nid = length(grt), nrow(ped)
+    ngrt, nid = length(grt), size(ped, 1)
     eid = ngrt ≤ 10 ? nid : findfirst(x -> x == grt[11], ped.grt) - 1
 
     F, dic = zeros(nid), Relation() # exact F for the first 10 generations

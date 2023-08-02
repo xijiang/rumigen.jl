@@ -9,13 +9,13 @@ the constraint on relationship is `K=2k(t)`.
 
 Based on Theo's function below with some simplifications.
 """
-function myopt(ped, A, K)
+function myopt(ped, A, K; silent = false)
     ["ebv", "sex"] ⊆ names(ped) || error("Not a proper pedigree")
     issymmetric(A) || error("A is not symmetric")
     nid, itr = size(ped, 1), 0
     size(A, 1) == nid || error("A and ped do not match")
     id = 1:nid
-    tprintln("{green}Searching solution for K = {/green}$(round(K, digits=3)): ")
+    silent || tprintln("{green}Searching solution for K = {/green}$(round(K, digits=3)): ")
     while true
         itr += 1
         u = ped.ebv[id]
@@ -34,10 +34,11 @@ function myopt(ped, A, K)
         λ = QAQi * (Q'Ai * u .- λ₀)
         c = Ai * (u - Q * λ) / (2λ₀)
         ix = findall(c .> 0) # indices of ID of next round
-        tprint("  iter: $itr, {cyan}nID{/cyan}: $(length(ix))")
+        silent || tprint("  iter: $itr, {cyan}nID{/cyan}: $(length(ix))")
         if length(ix) == length(id)
-            tprintln("\n{blue}Solution found{/blue}, n = $(length(ix))", 
-                    "c'Ac = ", round(c'A[id, id] * c, digits = 3))
+            silent || tprintln("\n{blue}Solution found{/blue}, 
+                                n = $(length(ix))", 
+                                "c'Ac = ", round(c'A[id, id] * c, digits = 3))
             rc = zeros(nid)
             rc[id] = c
             return rc

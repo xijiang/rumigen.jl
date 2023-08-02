@@ -146,7 +146,7 @@ Calculate TBV and phenotype from haplotypes.
 function uhp2gp(hp, loc, σₑ)
     nlc, nhp = size(hp)
     nid = nhp ÷ 2
-    nlc == nrow(loc) || error("Length of effects doesn't match number of loci")
+    nlc == size(loc, 1) || error("Length of effects doesn't match number of loci")
     qg = isodd.(hp[loc.qtl, 1:2:end]) + isodd.(hp[loc.qtl, 2:2:end])
     tbv = qg'loc.efct[loc.qtl]
     pht = tbv + randn(nid) * σₑ
@@ -165,7 +165,7 @@ function idealPop(xy, grt, lmp; maf = 0.2)
     hdr = readhdr(xy)
     mt, et, mj, ir, ic = xyhdr(hdr)
     (mt == 'F' && mj == 0) || error("Not a proper file.")
-    ir == nrow(lmp) || error("Genotypes and linkage map don't match.")
+    ir == size(lmp, 1) || error("Genotypes and linkage map don't match.")
     ic == 2length(grt) || error("Genotypes and pedigree don't match.")
     (et == Int8 || et == UInt16) || error("Not a proper genotype file.")
     gt = if et == Int8

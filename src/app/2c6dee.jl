@@ -1,5 +1,8 @@
+function sum_2c6bee(dir, bar)
+end
+
 # echo Selection by optimum contribution | md5sum
-function xps_2c6bee(; debug=true, nrpt=200, keep=false)
+function xps_2c6bee(; nrpt=200, ΔF = 0.011, keep = false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
     nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/2c6bee"
@@ -35,11 +38,69 @@ function xps_2c6bee(; debug=true, nrpt=200, keep=false)
         simpleSelection("$dir/$bar-sgs.xy", pop, lmp, nsir, ndam, ngrt, σₑ,
             ebv=true, gs=true, mp=false)
 
-        sum_65be72(dir, bar)
-        count_ones(dir, bar, ["sgs", "spd"], ppsz)
+        # Optimum contribution with pedigree
+        pop = copy(ped)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-opd.xy", force=true)
+        optSelection("$dir/$bar-opd.xy", pop, lmp, ngrt, σₑ, gs=false, dF=ΔF)
+
+        # Optimum contribution with genomic selection
+        pop = copy(ped)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-ogs.xy", force=true)
+        optSelection("$dir/$bar-ogs.xy", pop, lmp, ngrt, σₑ, gs=true, dF=ΔF)
+
+        sum_2c6bee(dir, bar, lmp)
+        qtl_count_ones(dir, bar, ["sgs", "spd", "ogs", "opd"], ppsz)
         keep || rm.(glob("$dir/$bar-*"))
     end
 end
+
+function sum_2c6bee(dir, bar, lmp)
+    for sel in ["sgs", "spd", "ogs", "opd"]
+        ped = deserialize("$dir/$bar-$sel+ped.ser")
+        sp = combine(groupby(ped, :grt),
+            :tbv => mean => :mbv,
+            :tbv => var => :vbv,
+            :F => mean => :mF,
+            [:ebv, :tbv] => cor => :cor)
+        ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
+        open("$dir/2c6bee.bin", "a") do io
+            write(io, sp.mbv[2:end],
+                sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
+                sp.mF[2:end],
+                sp.cor[2:end],
+                ideal[2:end],
+                va[2:end],
+                plst[2:end],  # no. of positive qtl lost
+                nlst[2:end],
+                pmls[2:end],  # no. of positive qtl lost of maf 0.2
+                nmls[2:end])  # no. of negative qtl lost of maf 0.2
+        end
+    end
+end
+
+function sum_c140ad(dir, bar)
+    for sel in ["pta", "ptb", "ptc", "sgs", "spd"]
+        ped = deserialize("$dir/$bar-$sel+ped.ser")
+        lmp = deserialize("$dir/$bar-map.ser")
+        sp = combine(groupby(ped, :grt),
+            :tbv => mean => :mbv,
+            :tbv => var => :vbv,
+            :F => mean => :mF,
+            [:ebv, :tbv] => cor => :cor)
+        ideal, va, plst, nlst = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
+        open("$dir/c140ad.bin", "a") do io
+            write(io, sp.mbv[2:end],
+                sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
+                sp.mF[2:end],
+                sp.cor[2:end],
+                ideal[2:end],
+                va[2:end],
+                plst[2:end],  # no. of positive qtl lost
+                nlst[2:end])
+        end
+    end
+end
+
 
 function cbvdist(ebv, sex, A, npa, nma; nsmpl = 10000, rnd = true)
     mbv, cn = zeros(nsmpl), zeros(nsmpl)
