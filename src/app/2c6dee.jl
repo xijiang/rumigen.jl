@@ -49,7 +49,7 @@ function xps_2c6bee(; nrpt=200, ΔF = 0.011, keep = false)
         optSelection("$dir/$bar-ogs.xy", pop, lmp, ngrt, σₑ, gs=true, dF=ΔF)
 
         sum_2c6bee(dir, bar, lmp)
-        qtl_count_ones(dir, bar, ["sgs", "spd", "ogs", "opd"], ppsz)
+        pos_qtl_frq(dir, bar, ["sgs", "spd", "ogs", "opd"], ppsz)
         keep || rm.(glob("$dir/$bar-*"))
     end
 end
