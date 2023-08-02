@@ -125,7 +125,7 @@ function pos_qtl_frq(dir, bar, sls, ppsz)
             end
             pos = lmp.efct[lmp.qtl] .> 0
             for i in eachindex(frq)
-                pos || (frq[i] = nhp - frq[i])
+                pos[i] || (frq[i] = nhp - frq[i])
             end
             open("$dir/pfq.bin", "a") do io
                 write(io, frq)
