@@ -111,6 +111,7 @@ that the population size is constant of `ppsz`.
 function pos_qtl_frq(dir, bar, sls, ppsz)
     nhp = 2ppsz
     lmp = deserialize("$dir/$bar-map.ser")
+    write(io, lmp.efct[lmp.qtl])
     for s in sls
         snp = xymap("$dir/$bar-$s.xy")
         qgt = isodd.(snp[lmp.qtl, :])
