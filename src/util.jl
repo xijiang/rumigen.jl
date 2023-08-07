@@ -101,6 +101,12 @@ function histfrq(v::Vector, nb)
     tbl[1:nb]
 end
 
+function binapp!(file, v::Vector)
+    open(file, "a") do io
+        write(io, v)
+    end
+end
+
 """
     function pos_qtl_frq(dir, bar, sls, ppsz)
 Count the number of positive QTL alleles of each locus in each generation in
@@ -111,9 +117,8 @@ that the population size is constant of `ppsz`.
 function pos_qtl_frq(dir, bar, sls, ppsz)
     nhp = 2ppsz
     lmp = deserialize("$dir/$bar-map.ser")
-    open("$dir/pfq.bin", "a") do io
-        write(io, lmp.efct[lmp.qtl])
-    end
+    binapp!("$dir/pfp.bin", lmp.efct[lmp.qtl])
+    ni = lmp.efct[lmp.qtl] .< 0
     for s in sls
         snp = xymap("$dir/$bar-$s.xy")
         qgt = isodd.(snp[lmp.qtl, :])
@@ -123,16 +128,9 @@ function pos_qtl_frq(dir, bar, sls, ppsz)
             for x in frq
                 cnt[x+1] += 1
             end
-            open("$dir/fof.bin", "a") do io # frequency of frequency
-                write(io, cnt)
-            end
-            pos = lmp.efct[lmp.qtl] .> 0
-            for i in eachindex(frq)
-                pos[i] || (frq[i] = nhp - frq[i])
-            end
-            open("$dir/pfq.bin", "a") do io
-                write(io, frq)
-            end
+            binapp!("$dir/fof.bin", cnt) # frequency of frequency
+            frq[ni] = nhp .- frq[ni]
+            binapp!("$dir/pfq.bin", frq)
         end
     end
 end
