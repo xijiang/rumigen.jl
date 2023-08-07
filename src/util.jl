@@ -130,7 +130,7 @@ function pos_qtl_frq(dir, bar, sls, ppsz)
             end
             binapp!("$dir/fof.bin", cnt) # frequency of frequency
             frq[ni] = nhp .- frq[ni]
-            binapp!("$dir/pfq.bin", frq)
+            binapp!("$dir/pfq.bin", vec(frq))
         end
     end
 end
