@@ -1,11 +1,8 @@
-function sum_2c6bee(dir, bar)
-end
-
 # echo Selection by optimum contribution | md5sum
-function xps_2c6bee(; nrpt=200, ΔF = 0.011, keep = false)
+function xps_2c6dee(; nrpt=200, ΔF = 0.011, keep = false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
     nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
-    fdr, dir = "$rst/base", "$rst/2c6bee"
+    fdr, dir = "$rst/base", "$rst/2c6dee"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
     isdir(dir) || mkpath(dir)
@@ -48,13 +45,13 @@ function xps_2c6bee(; nrpt=200, ΔF = 0.011, keep = false)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-ogs.xy", force=true)
         optSelection("$dir/$bar-ogs.xy", pop, lmp, ngrt, σₑ, gs=true, dF=ΔF)
 
-        sum_2c6bee(dir, bar, lmp)
+        sum_2c6dee(dir, bar, lmp)
         pos_qtl_frq(dir, bar, ["sgs", "spd", "ogs", "opd"], ppsz)
         keep || rm.(glob("$dir/$bar-*"))
     end
 end
 
-function sum_2c6bee(dir, bar, lmp)
+function sum_2c6dee(dir, bar, lmp)
     for sel in ["sgs", "spd", "ogs", "opd"]
         ped = deserialize("$dir/$bar-$sel+ped.ser")
         sp = combine(groupby(ped, :grt),
@@ -63,7 +60,7 @@ function sum_2c6bee(dir, bar, lmp)
             :F => mean => :mF,
             [:ebv, :tbv] => cor => :cor)
         ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
-        open("$dir/2c6bee.bin", "a") do io
+        open("$dir/2c6dee.bin", "a") do io
             write(io, sp.mbv[2:end],
                 sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
                 sp.mF[2:end],
@@ -112,7 +109,7 @@ function cbvdist(ebv, sex, A, npa, nma; nsmpl = 10000, rnd = true)
     return mbv, cn
 end
 
-function spl_2c6bee(dir)
+function spl_2c6dee(dir)
     test = "$dir/rst/test-suite"
     ped = deserialize("$test/bar-uhp+ped.ser")
     giv = A⁻¹(ped, "$test/bar-mid.ser")
@@ -122,7 +119,7 @@ function spl_2c6bee(dir)
     return ped.ebv[lst], ped.sex[lst], A[lst, lst]
 end
 
-function debug_2c6bee(dir)
+function debug_2c6dee(dir)
     f0, df = 0.0266642175, 0.012
     return fungencont(dat, A[1001:1200, 1001:1200], 0.13)
     cor(ped.pht, ped.ebv)
