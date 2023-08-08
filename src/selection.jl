@@ -110,7 +110,7 @@ function optSelection(xy, ped, lmp, ngrt, σₑ; gs = false, dF = 0.011, k₀ = 
     (mt == 'F' && mj == 0 && nc == 2size(ped, 1)) || error("$xy, or pedigree not right")
     lms = sumMap(lmp)
     nid = sum(ped.grt .== ped.grt[end])
-    t = length(unique(ped.grt))
+    #t = length(unique(ped.grt))
     
     @info "Selection on $(basename(xy)), for $ngrt generations"
     for igrt ∈ 1:ngrt
@@ -118,13 +118,14 @@ function optSelection(xy, ped, lmp, ngrt, σₑ; gs = false, dF = 0.011, k₀ = 
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
         ogt = zeros(et, nr, nid * 2)
         oebv = ped.ebv[ped.grt .< ped.grt[end]]
-        A = gs ? grm(xy, lmp.chip) : Amat(ped)
-        giv = inv(A)
+        A = Amat(ped)
+        G = gs ? grm(xy, lmp.chip) : A
+        giv = inv(G)
         animalModel(ped, giv, h²) # default using :grt as fixed effect
         ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
-        pool = size(A, 1) - nid + 1:size(A, 1) # ID of current generation
+        pool = size(G, 1) - nid + 1:size(G, 1) # ID of current generation
         A₂₂ = view(A, pool, pool)
-        K = 2(1 - (1 - k₀) * (1 - dF) ^ t)
+        K = 2(1 - (1 - k₀) * (1 - dF) ^ igrt)
         c = myopt(DataFrame(ebv=ped.ebv[pool], sex=ped.sex[pool]), A₂₂, K, silent=true)
         pm = randomMate(DataFrame(sex=ped.sex[pool], c=c), nid) .+ (size(ped, 1) - nid)
         drop(agt, ogt, pm, lms)
