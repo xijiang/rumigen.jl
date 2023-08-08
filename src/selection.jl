@@ -142,7 +142,6 @@ function optSelection(xy, ped, lmp, ngrt, σₑ; gs = false, dF = 0.011, k₀ = 
         ped.pht[ped.sex .==1] .== missing
         agt = nothing
         nc += nid * 2
-        t += 1
     end
     println()
     ped.F = inbreeding(xy, lmp.chip)
