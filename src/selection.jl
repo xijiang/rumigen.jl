@@ -104,7 +104,11 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
     serialize("$(xy[1:end-3])+ped.ser", ped)
 end
 
-function optSelection(xy, ped, lmp, ngrt, σₑ; gs = false, dF = 0.011, k₀ = 0.)
+"""
+    function optSelection(xy, ped, lmp, ngrt, σₑ, dF; gs = false, k₀ = 0.)
+Note, dF is often not big enough, such that to have a solution for `c`.
+"""
+function optSelection(xy, ped, lmp, ngrt, σₑ, dF; gs = false, k₀ = 0.)
     hdr, h² = readhdr(xy), 1 / (1 + σₑ^2)
     mt, et, mj, nr, nc = xyhdr(hdr)
     (mt == 'F' && mj == 0 && nc == 2size(ped, 1)) || error("$xy, or pedigree not right")
@@ -119,13 +123,13 @@ function optSelection(xy, ped, lmp, ngrt, σₑ; gs = false, dF = 0.011, k₀ = 
         ogt = zeros(et, nr, nid * 2)
         oebv = ped.ebv[ped.grt .< ped.grt[end]]
         A = Amat(ped)
-        G = gs ? grm(xy, lmp.chip) : A
+        G = gs ? grm(xy, lmp.chip) : copy(A)
         giv = inv(G)
         animalModel(ped, giv, h²) # default using :grt as fixed effect
         ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
         pool = size(G, 1) - nid + 1:size(G, 1) # ID of current generation
         A₂₂ = view(A, pool, pool)
-        K = 2(1 - (1 - k₀) * (1 - dF) ^ igrt)
+        K = 2(1 - (1 - k₀) * (1 - dF) ^ (igrt+1))
         c = myopt(DataFrame(ebv=ped.ebv[pool], sex=ped.sex[pool]), A₂₂, K, silent=true)
         pm = randomMate(DataFrame(sex=ped.sex[pool], c=c), nid) .+ (size(ped, 1) - nid)
         drop(agt, ogt, pm, lms)

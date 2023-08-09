@@ -1,5 +1,5 @@
 # echo Selection by optimum contribution | md5sum
-function xps_2c6dee(; nrpt=200, ΔF = 0.011, keep = false)
+function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
     nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
@@ -38,12 +38,12 @@ function xps_2c6dee(; nrpt=200, ΔF = 0.011, keep = false)
         # Optimum contribution with pedigree
         pop = copy(ped)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-opd.xy", force=true)
-        optSelection("$dir/$bar-opd.xy", pop, lmp, ngrt, σₑ, gs=false, dF=ΔF, k₀=0.027)
+        optSelection("$dir/$bar-opd.xy", pop, lmp, ngrt, σₑ, ΔF, gs=false, k₀=0.027)
 
         # Optimum contribution with genomic selection
         pop = copy(ped)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-ogs.xy", force=true)
-        optSelection("$dir/$bar-ogs.xy", pop, lmp, ngrt, σₑ, gs=true, dF=ΔF, k₀=0.027)
+        optSelection("$dir/$bar-ogs.xy", pop, lmp, ngrt, σₑ, ΔF, gs=true, k₀=0.027)
 
         sum_2c6dee(dir, bar, lmp)
         pos_qtl_frq(dir, bar, ["sgs", "spd", "ogs", "opd"], ppsz)
