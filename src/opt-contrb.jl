@@ -18,7 +18,6 @@ function myopt(ped, A, K; silent = false)
     silent || tprintln("{green}Searching solution for K = {/green}$(round(K, digits=3)): ")
     while true
         itr += 1
-        @show itr
         u = ped.ebv[id]
         Q = [ped.sex[id] .== 1 ped.sex[id] .== 0]
         Ai = inv(A[id, id])
