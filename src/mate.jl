@@ -34,6 +34,7 @@ function randomMate(sires, dams; noff = 0)
     sortslices([pa[1:noff] ma[1:noff]], dims=1, by=x -> (x[1], x[2]))
 end
 
+#=
 """
     function randomMate(ped::DataFrame, noff)
 Create mate pairs according to ID's contribution stated in `ped.c`.  `ped.c` is
@@ -71,6 +72,22 @@ function randomMate(ped::DataFrame, noff)
         append!(ma, repeat([id], r))
     end
     sortslices([pa shuffle(ma)], dims=1, by=x -> (x[1], x[2]))
+end
+=#
+
+"""
+    function randomMate(ped::DataFrame, noff)
+Random select ID to mate from `ped` with Weights of their supposed
+contributions.  `noff` is the number of offspring to be generated.
+"""
+function randomMate(ped::DataFrame, noff)
+    ["sex", "c"] ⊆ names(ped) || error("Not a proper pedigree")
+    sex, c = ped.sex, ped.c
+    sir = findall(sex .== 1)
+    dam = findall(sex .== 0)
+    pa = sample(sir, Weights(c[sir]), noff)
+    ma = sample(dam, Weights(c[dam]), noff)
+    sortslices([pa ma], dims=1, by=x -> (x[1], x[2]))
 end
 
 """

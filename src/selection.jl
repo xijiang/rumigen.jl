@@ -1,4 +1,3 @@
-
 """
     function pedng(ped, sel::Symbol, nsir, ndam)
 Given a pedigree `ped`, select `nsir` sires and `ndam` dams from 
@@ -135,7 +134,7 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; gs = false, k₀ = 0.)
         drop(agt, ogt, pm, lms)
         appendxy!(xy, ogt)
         tbv, pht = uhp2gp(ogt, lmp, σₑ)
-        df = DataFrame(id = size(ped, 1) + 1: size(ped, 1) + size(pm, 1),
+        df = DataFrame( id = size(ped, 1) + 1: size(ped, 1) + size(pm, 1),
                         pa = pm[:, 1], ma = pm[:, 2],
                         sex = rand(0:1, nid),
                         grt = ped.grt[end] + 1,

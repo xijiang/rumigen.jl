@@ -1,7 +1,7 @@
 # echo Selection by optimum contribution | md5sum
 function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
-    nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
+    nsir, ndam, pres, ngrt, dist = 20, 50, 5, 21, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
@@ -11,6 +11,7 @@ function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
     @info "Simulation begins"
     isdir(fdr) && rm(fdr, recursive=true, force=true)
     foo = cattle_base(ppsz, fdr)                    # ==> base
+    #foo = "D9Nrj"
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
@@ -22,7 +23,6 @@ function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
             random=true, mp=false)
 
         # phenotype selection not possible as no male phenotypes
-
         # Pedigree selection
         pop = copy(ped)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-spd.xy", force=true)
@@ -57,8 +57,8 @@ function sum_2c6dee(dir, bar, lmp)
         sp = DataFrame(mbv=Float64[], vbv=Float64[], mF=Float64[], bcr=Float64[],
             scr=Float64[], dcr=Float64[])
         for grt in groupby(ped, :grt)
-            mbv = mean(grt.ebv)
-            vbv = var(grt.ebv)
+            mbv = mean(grt.tbv)
+            vbv = var(grt.tbv)
             mF = mean(grt.F)
             bcr = cor(grt.ebv, grt.tbv)
             sirs = grt.sex .== 1
@@ -69,30 +69,21 @@ function sum_2c6dee(dir, bar, lmp)
         end
         ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/2c6dee.bin", "a") do io
-            write(io, sp.mbv[2:end],
-                sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
-                sp.mF[2:end],
-                sp.bcr[2:end],
-                sp.scr[2:end],
-                sp.dcr[2:end],
-                ideal[2:end],
-                va[2:end],
-                plst[2:end],  # no. of positive qtl lost
-                nlst[2:end],
-                pmls[2:end],  # no. of positive qtl lost of maf 0.2
-                nmls[2:end])  # no. of negative qtl lost of maf 0.2
+            write(io,
+                sp.mbv[2:end-1],
+                sp.vbv[2:end-1],  # as requested by SMS on 2023-05-21, by Theo
+                sp.mF[2:end-1],
+                sp.bcr[2:end-1],
+                sp.scr[2:end-1],
+                sp.dcr[2:end-1],
+                ideal[2:end-1],
+                va[2:end-1],
+                plst[2:end-1],  # no. of positive qtl lost
+                nlst[2:end-1],
+                pmls[2:end-1],  # no. of positive qtl lost of maf 0.2
+                nmls[2:end-1])  # no. of negative qtl lost of maf 0.2
         end
     end
-end
-
-function cbvdist(ebv, sex, A, npa, nma; nsmpl = 10000, rnd = true)
-    mbv, cn = zeros(nsmpl), zeros(nsmpl)
-    for i in 1:nsmpl
-        c = rnd ? randomc(sex, npa, nma) : equalc(sex, npa, nma)
-        mbv[i] = c'ebv
-        cn[i] = c'A * c / 2
-    end
-    return mbv, cn
 end
 
 function spl_2c6dee(dir)
@@ -103,21 +94,6 @@ function spl_2c6dee(dir)
     lst = 1001:1200
     A = Amat(ped, m = size(ped, 1))
     return ped.ebv[lst], ped.sex[lst], A[lst, lst]
-end
-
-function debug_2c6dee(dir)
-    f0, df = 0.0266642175, 0.012
-    return fungencont(dat, A[1001:1200, 1001:1200], 0.13)
-    cor(ped.pht, ped.ebv)
-    dat = [lpd.ebv lpd.sex .== 1 lpd.sex .== 0]
-    K = Kt(6, df)
-    lmp = deserialize("$test/bar-map.ser")
-    gt = xymap("$dir/$test/bar-uhp.xy")
-    lms = sumMap(lmp)
-    nsir, ndam, nfam, nsib = 20, 50, 50, 4
-    agt = xymap("$dir/$test/bar-uhp.xy")
-    dat = [ped.ebv ped.sex .== 1 ped.sex .== 0]
-    K 
 end
 
 """

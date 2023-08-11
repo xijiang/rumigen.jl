@@ -1,3 +1,49 @@
+#=
+"""
+    function _optnid(ebv, sex, A, K)
+A `-` in the function name means it is a private function, not to be called
+directly by end users.
+"""
+function _optnid(ebv, sex, A, K)
+end
+
+"""
+    function optconstraint(ped, A, prop)
+The optimum constraint, such that a solution exists. It also meet the required
+number of breeding ID. The constraint is searched between ``min(K) =
+sum(QAQi)/4`` and ``4min(K)``.
+"""
+function optconstraint(ped, A, prop)
+    ["ebv", "sex"] ⊆ names(ped) || error("Not a proper pedigree")
+    issymmetric(A) || error("A is not symmetric")
+    size(A, 1) == size(ped, 1) || error("A and ped do not match")
+
+    minK = begin
+        Q = [ped.sex .== 1 ped.sex .== 0]
+        Ai = inv(A)
+        sum(inv(Q'Ai*Q))/4
+    end
+    maxK = 4minK
+    k = (minK + maxK) / 2
+end
+
+# a bisect search function
+function _bisect(f, a, b, tol)
+    fa, fb = f(a), f(b)
+    fa * fb > 0 && error("f(a) and f(b) must have opposite signs")
+    while abs(b - a) > tol
+        c = (a + b) / 2
+        fc = f(c)
+        if fa * fc < 0
+            b, fb = c, fc
+        else
+            a, fa = c, fc
+        end
+    end
+    (a + b) / 2
+end
+=#
+
 """
 `K` = is the restriction on average relationships (``Meuwissen, 1997, J Anim
 Sci``). Let the constraint on the inbreeding in generation `t`` be:
@@ -25,10 +71,11 @@ function myopt(ped, A, K; silent = false)
         QAQi = inv(QAQ)
         f1 = u' * (Ai - Ai * Q * QAQi * Q'Ai) * u # numerator
         f2 = 4K - sum(QAQi) # denominator
-        if f2 ≤ 0
-            @info "Cannot meet constraint K = $K"
-            return 0.5Ai * Q * QAQi * ones(length(id))
-        end
+        # if f2 ≤ 0
+        #     silent || @info "Cannot meet constraint K = $K"
+        #     return 0.5Ai * Q * QAQi * ones(length(id))
+        # end
+        f2 ≤ 0 && return 0.5Ai * Q * QAQi * ones(length(id))
         f1 = max(f1, 1e-10)
         λ₀ = sqrt(f1/f2)
         λ = QAQi * (Q'Ai * u .- λ₀)

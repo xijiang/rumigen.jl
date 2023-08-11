@@ -11,6 +11,7 @@ using Random
 using Serialization
 using SparseArrays
 using Statistics
+using StatsBase
 using Term
 
 include("app/xps.jl")
