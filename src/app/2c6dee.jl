@@ -1,7 +1,7 @@
 # echo Selection by optimum contribution | md5sum
 function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
     rst, ppsz, nlc, nqtl, h², σₐ = "rst", 200, 50_000, 10_000, 0.25, 1.0
-    nsir, ndam, pres, ngrt, dist = 20, 50, 5, 21, Normal()
+    nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
@@ -70,18 +70,18 @@ function sum_2c6dee(dir, bar, lmp)
         ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/2c6dee.bin", "a") do io
             write(io,
-                sp.mbv[2:end-1],
-                sp.vbv[2:end-1],  # as requested by SMS on 2023-05-21, by Theo
-                sp.mF[2:end-1],
-                sp.bcr[2:end-1],
-                sp.scr[2:end-1],
-                sp.dcr[2:end-1],
-                ideal[2:end-1],
-                va[2:end-1],
-                plst[2:end-1],  # no. of positive qtl lost
-                nlst[2:end-1],
-                pmls[2:end-1],  # no. of positive qtl lost of maf 0.2
-                nmls[2:end-1])  # no. of negative qtl lost of maf 0.2
+                sp.mbv[2:end],
+                sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
+                sp.mF[2:end],
+                sp.bcr[2:end],
+                sp.scr[2:end],
+                sp.dcr[2:end],
+                ideal[2:end],
+                va[2:end],
+                plst[2:end],  # no. of positive qtl lost
+                nlst[2:end],
+                pmls[2:end],  # no. of positive qtl lost of maf 0.2
+                nmls[2:end])  # no. of negative qtl lost of maf 0.2
         end
     end
 end
