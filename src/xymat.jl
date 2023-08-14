@@ -233,7 +233,7 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
     mmp.chip = map(x -> x ∈ slc, flc)
     mmp.qtl = map(x -> x ∈ lqtl, flc)
     mmp.ref = map(x -> x ∈ rlc, flc)
-    serialize(omp, select(mmp, [:chr, :pos, :chip, :qtl]))
+    serialize(omp, select(mmp, [:chr, :pos, :chip, :qtl, :ref]))
 
     # sampled genotypes
     open(oxy, "w") do io # always write loci majored
