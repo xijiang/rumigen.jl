@@ -58,7 +58,7 @@ end
 function sum_2c6dee(dir, bar, lmp)
     for sel in ["sgs", "spd", "oag", "ogg", "oap"]
         ped = deserialize("$dir/$bar-$sel+ped.ser")
-        sp = DataFrame(mbv=Float64[], vbv=Float64[], mF=Float64[], mFr=Florat64[],
+        sp = DataFrame(mbv=Float64[], vbv=Float64[], mF=Float64[], mFr=Float64[],
             bcr=Float64[], scr=Float64[], dcr=Float64[], np=Float64[], nm=Float64[])
         for grt in groupby(ped, :grt)
             mbv = mean(grt.tbv)
