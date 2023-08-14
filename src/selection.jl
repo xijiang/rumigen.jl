@@ -100,6 +100,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
     end
     println()
     ped.F = inbreeding(xy, lmp.chip)
+    ped.Fr = inbreeding(xy, lmp.ref) # inbreeding by reference loci
     serialize("$(xy[1:end-3])+ped.ser", ped)
 end
 
