@@ -174,7 +174,8 @@ function idealPop(xy, grt, lmp; maf = 0.2)
         Int8.(isodd.(Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)))
     end
     qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
-    frq = mean(qg, dims = 2) / 2.
+    i₀ = findall(grt .== 0)  # indices of the starting generation
+    frq = mean(qg[:, i₀], dims = 2) / 2.
     efct = lmp.efct[lmp.qtl]
     best = sum(efct[efct .> 0])
     # also use float for qtl fixation counting for ease of retrieval

@@ -104,10 +104,15 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
 end
 
 """
-    function optSelection(xy, ped, lmp, ngrt, σₑ, dF; gs = false, k₀ = 0.)
+    function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
 Note, dF is often not big enough, such that to have a solution for `c`.
+- `op = 1` for optimum contribution selection with pedigree
+- `op = 2` for optimum contribution selection with genomic selection,
+  constrained by `A`.
+- `op = 3` for optimum contribution selection with genomic selection,
+  constrained by `G`.
 """
-function optSelection(xy, ped, lmp, ngrt, σₑ, dF; gs = false, k₀ = 0.)
+function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
     hdr, h² = readhdr(xy), 1 / (1 + σₑ^2)
     mt, et, mj, nr, nc = xyhdr(hdr)
     (mt == 'F' && mj == 0 && nc == 2size(ped, 1)) || error("$xy, or pedigree not right")
@@ -121,13 +126,29 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; gs = false, k₀ = 0.)
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
         ogt = zeros(et, nr, nid * 2)
         oebv = ped.ebv[ped.grt .< ped.grt[end]]
-        A = Amat(ped)
-        G = gs ? grm(xy, lmp.chip) : copy(A)
-        giv = inv(G)
+        giv = A₂₂ = nothing
+        pool = findall(ped.grt .== ped.grt[end]) # ID of current generation
+        if op == 1
+            A = Amat(ped)
+            A₂₂ = copy(A[pool, pool])
+            giv = inv(A)
+            A = nothing
+        elseif op == 2
+            G = grm(xy, lmp.chip)
+            giv = inv(G)
+            G = nothing
+            A = Amat(ped)
+            A₂₂ = copy(A[pool, pool])
+            A = nothing
+        elseif op == 3
+            G = grm(xy, lmp.chip)
+            giv = inv(G)
+            A₂₂ = copy(G[pool, pool])
+            G = nothing
+        end
+
         animalModel(ped, giv, h²) # default using :grt as fixed effect
         ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
-        pool = size(G, 1) - nid + 1:size(G, 1) # ID of current generation
-        A₂₂ = view(A, pool, pool)
         K = 2(1 - (1 - k₀) * (1 - dF) ^ (igrt+1))
         c = myopt(DataFrame(ebv=ped.ebv[pool], sex=ped.sex[pool]), A₂₂, K, silent=true)
         pm = randomMate(DataFrame(sex=ped.sex[pool], c=c), nid) .+ (size(ped, 1) - nid)
@@ -148,5 +169,6 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; gs = false, k₀ = 0.)
     end
     println()
     ped.F = inbreeding(xy, lmp.chip)
+    ped.Fr = inbreeding(xy, lmp.ref) # inbreeding by reference loci
     serialize("$(xy[1:end-3])+ped.ser", ped)
 end

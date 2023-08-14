@@ -203,7 +203,7 @@ Write the results into 3 files, the genotype file, the map file and
 a binary file indicate which loci are QTLs, and which loci are chip SNP.
 """
 function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
-    nlc=50_000, nqtl=5_000, dir="")
+    nlc=50_000, nqtl=5_000, nref=10_000, dir="")
     # Prepare files
     (isfile(ixy) && isfile(imp)) || error("File $ixy or $imp doesn't exist")
     iseven(nhp) || error("Number of haplotypes $nhp must be even")
@@ -221,16 +221,18 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
         error("Parameter nlc($nlc), nhp($nhp), or nqtl($nqtl) not right for tlc($tlc), and thp($thp)")
  
     # Sample loci
-    lqtl = sort(shuffle(1:tlc)[1:nqtl])
-    slc = sort(shuffle(1:tlc)[1:nlc])
+    lqtl = sort(shuffle(1:tlc)[1:nqtl]) # QTL loci
+    slc = sort(shuffle(1:tlc)[1:nlc])   # chip loci
+    rlc = sort(shuffle(1:tlc)[1:nref])  # reference loci
     shp = sort(shuffle(1:thp)[1:nhp])
-    flc = sort(unique([lqtl; slc])) # final sampled loci
+    flc = sort(unique([lqtl; slc; rlc])) # final sampled loci
 
     # sampled linkage map
     imp = deserialize(imp)
     mmp = imp[flc, :]
     mmp.chip = map(x -> x ∈ slc, flc)
     mmp.qtl = map(x -> x ∈ lqtl, flc)
+    mmp.ref = map(x -> x ∈ rlc, flc)
     serialize(omp, select(mmp, [:chr, :pos, :chip, :qtl]))
 
     # sampled genotypes
