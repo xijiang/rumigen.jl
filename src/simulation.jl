@@ -108,7 +108,8 @@ function initPedigree(xy, lmp, σₑ; fg = 0)
               tbv = tbv,
               pht = allowmissing(pht),
               ebv = 0.,
-              F = 0.)
+              F = 0.,
+              Fr = 0.)
 end
 
 """
