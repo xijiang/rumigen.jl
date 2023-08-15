@@ -92,6 +92,7 @@ information in `lmp`. The pedigree returned is a DataFrame with column:
 - `pht`: phenotype of the ID, which allows missing
 - `ebv`: estimated breeding value of the ID, default 0
 - `F`: inbreeding coefficient of the ID, default 0
+- `Fr`: inbreeding coefficient from reference markers, default 0
 """
 function initPedigree(xy, lmp, σₑ; fg = 0)
     (:qtl ∈ propertynames(lmp) && :efct ∈ propertynames(lmp)) || error("No QTL column in $lmp")

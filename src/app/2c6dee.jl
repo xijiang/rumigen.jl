@@ -47,7 +47,7 @@ function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
         # Optimum contribution with genomic selection, G constrained
         pop = copy(ped)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-ogg.xy", force=true)
-        optSelection("$dir/$bar-ogg.xy", pop, lmp, ngrt, σₑ, ΔF, op=2, k₀=0.027)
+        optSelection("$dir/$bar-ogg.xy", pop, lmp, ngrt, σₑ, ΔF, op=3, k₀=0.027)
 
         sum_2c6dee(dir, bar, lmp)
         pos_qtl_frq(dir, bar, ["sgs", "spd", "oag", "ogg", "oap"], ppsz)
