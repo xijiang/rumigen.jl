@@ -1,5 +1,5 @@
 # echo Selection by optimum contribution | md5sum
-function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
+function xps_2c6dee(; nrpt=100, ΔF=0.012, keep=false)
     rst, ppsz, nlc, nqtl, nref, h², σₐ = "rst", 200, 50_000, 10_000, 10_000, 0.25, 1.0
     nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
@@ -9,8 +9,9 @@ function xps_2c6dee(; nrpt=200, ΔF = 0.012, keep = false)
 
     # The working parts
     @info "Simulation begins"
-    isdir(fdr) && rm(fdr, recursive=true, force=true)
-    foo = cattle_base(ppsz, fdr)                    # ==> base
+    #isdir(fdr) && rm(fdr, recursive=true, force=true)
+    #foo = cattle_base(ppsz, fdr)                    # ==> base
+    foo = "jArVr"
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
@@ -77,19 +78,19 @@ function sum_2c6dee(dir, bar, lmp)
         ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/2c6dee.bin", "a") do io
             write(io,
-                sp.mbv[2:end],
+                sp.mbv[2:end],  # 1
                 sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
-                sp.mF[2:end],
-                sp.mFr[2:end],
-                sp.bcr[2:end],
-                sp.scr[2:end],
-                sp.dcr[2:end],
-                sp.np[2:end],
-                sp.nm[2:end],
-                ideal[2:end],
-                va[2:end],
+                sp.mF[2:end],   # 3
+                sp.mFr[2:end],  # 4
+                sp.bcr[2:end],  # 5
+                sp.scr[2:end],  # 6
+                sp.dcr[2:end],  # 7
+                sp.np[2:end],   # 8
+                sp.nm[2:end],   # 9
+                ideal[2:end],   # 10
+                va[2:end],      # 11
                 plst[2:end],  # no. of positive qtl lost
-                nlst[2:end],
+                nlst[2:end],    # 13
                 pmls[2:end],  # no. of positive qtl lost of maf 0.2
                 nmls[2:end])  # no. of negative qtl lost of maf 0.2
         end

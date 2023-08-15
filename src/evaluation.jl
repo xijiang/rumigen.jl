@@ -129,12 +129,7 @@ function inbreeding(xy, loci)
     nlc, nid = sum(loci), ic ÷ 2
     F = zeros(nid)
     for i in 1:nid
-        f = 0.
-        for j in 1:nlc
-            loci[j] || continue
-            gt[j, 2i-1] == gt[j, 2i] && (f += 1.)
-        end
-        F[i] = f / nlc
+        F[i] = sum(gt[loci, 2i-1] .== gt[loci, 2i]) / nlc
     end
     F
 end
