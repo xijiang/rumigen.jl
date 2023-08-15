@@ -9,9 +9,9 @@ function xps_2c6dee(; nrpt=100, ΔF=0.012, keep=false)
 
     # The working parts
     @info "Simulation begins"
-    #isdir(fdr) && rm(fdr, recursive=true, force=true)
-    #foo = cattle_base(ppsz, fdr)                    # ==> base
-    foo = "jArVr"
+    isdir(fdr) && rm(fdr, recursive=true, force=true)
+    foo = cattle_base(ppsz, fdr)                    # ==> base
+    #foo = "jArVr"
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
