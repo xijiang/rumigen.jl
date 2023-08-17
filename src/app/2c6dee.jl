@@ -1,6 +1,6 @@
 # echo Selection by optimum contribution | md5sum
 function xps_2c6dee(; nrpt=100, ΔF=0.012, keep=false)
-    rst, ppsz, nlc, nqtl, nref, h², σₐ = "rst", 200, 50_000, 10_000, 10_000, 0.25, 1.0
+    rst, ppsz, nlc, nqtl, nref, h², σₐ = "rst", 200, 50_000, 10_000, 50_000, 0.25, 1.0
     nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
 
