@@ -9,13 +9,13 @@ function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false)
 
     # The working parts
     @info "Simulation begins"
-    foo = "../test-suite/Xm6k4"
+    #foo = "../test-suite/Xm6k4"
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
         isdir(fdr) && rm(fdr, recursive=true, force=true)
         foo = cattle_base(ppsz, fdr)                    # ==> base
-        
+
         # random selectio for a few generations
         bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
         lmp = deserialize("$dir/$bar-map.ser") # each sample has its own map
