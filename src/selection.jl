@@ -146,6 +146,14 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
             giv = inv(G)
             A₂₂ = copy(G[pool, pool])
             G = nothing
+        elseif op == 4
+            G = grm(xy, lmp.chip)
+            giv = inv(G)
+            ids = findall(ped.grt .== ped.grt[end])
+            A₂₂ = gametemat(xy, lmp.chip, ids)
+            A = nothing
+        else
+            error("op = $op not supported")
         end
 
         animalModel(ped, giv, h²) # default using :grt as fixed effect

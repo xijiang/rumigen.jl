@@ -1,5 +1,5 @@
 # echo Selection by optimum contribution | md5sum
-function xps_2c6dee(; nrpt=100, ΔF=0.012, keep=false)
+function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false)
     rst, ppsz, nlc, nqtl, nref, h², σₐ = "rst", 200, 50_000, 10_000, 50_000, 0.25, 1.0
     nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
@@ -9,12 +9,13 @@ function xps_2c6dee(; nrpt=100, ΔF=0.012, keep=false)
 
     # The working parts
     @info "Simulation begins"
-    isdir(fdr) && rm(fdr, recursive=true, force=true)
-    foo = cattle_base(ppsz, fdr)                    # ==> base
-    #foo = "jArVr"
+    foo = "../test-suite/Xm6k4"
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
+        isdir(fdr) && rm(fdr, recursive=true, force=true)
+        foo = cattle_base(ppsz, fdr)                    # ==> base
+        
         # random selectio for a few generations
         bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
         lmp = deserialize("$dir/$bar-map.ser") # each sample has its own map
@@ -35,21 +36,27 @@ function xps_2c6dee(; nrpt=100, ΔF=0.012, keep=false)
         simpleSelection("$dir/$bar-sgs.xy", pop, lmp, nsir, ndam, ngrt, σₑ,
             ebv=true, gs=true, mp=false)
 
-        # Optimum contribution with pedigree
+        # Optimum contribution with A on pedigree
         pop = copy(ped)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-oap.xy", force=true)
         optSelection("$dir/$bar-oap.xy", pop, lmp, ngrt, σₑ, ΔF, op=1, k₀=0.027)
 
-        # Optimum contribution with genomic selection, A constrained
+        # Optimum contribution with A on genomic selection
         pop = copy(ped)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-oag.xy", force=true)
         optSelection("$dir/$bar-oag.xy", pop, lmp, ngrt, σₑ, ΔF, op=2, k₀=0.027)
 
-        # Optimum contribution with genomic selection, G constrained
+        # Optimum contribution with G on genomic selection
         pop = copy(ped)
         cp("$dir/$bar-uhp.xy", "$dir/$bar-ogg.xy", force=true)
         optSelection("$dir/$bar-ogg.xy", pop, lmp, ngrt, σₑ, ΔF, op=3, k₀=0.027)
 
+        # Optimum contribution with E on genomic selection, E is A with true IBD
+        pop = copy(ped)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-oeg.xy", force=true)
+        optSelection("$dir/$bar-oeg.xy", pop, lmp, ngrt, σₑ, ΔF, op=4, k₀=0.027)
+
+        @info "Summarizing repeat $irpt of $nrpt"
         sum_2c6dee(dir, bar, lmp)
         pos_qtl_frq(dir, bar, ["sgs", "spd", "oag", "ogg", "oap"], ppsz)
         keep || rm.(glob("$dir/$bar-*"))
@@ -57,7 +64,7 @@ function xps_2c6dee(; nrpt=100, ΔF=0.012, keep=false)
 end
 
 function sum_2c6dee(dir, bar, lmp)
-    for sel in ["sgs", "spd", "oag", "ogg", "oap"]
+    for sel in ["sgs", "spd", "oeg", "oag", "ogg", "oap"]
         ped = deserialize("$dir/$bar-$sel+ped.ser")
         sp = DataFrame(mbv=Float64[], vbv=Float64[], mF=Float64[], mFr=Float64[],
             bcr=Float64[], scr=Float64[], dcr=Float64[], np=Float64[], nm=Float64[])

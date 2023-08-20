@@ -365,3 +365,34 @@ function xymap(xy::AbstractString)
     mt == 'F' || error("Only support F matrix")
     Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
 end
+
+"""
+    function gametemat(xy::AbstractString, loc, ids)
+Mean gamete matrix (mgm) uss the IBD info stored in the `xy` file to generate a
+gamete matrix. It them average the 4 cells to calculate the relationships
+between ID based on IBD information. In reality, these IBD information can be
+obtained from dense genotypes very accurately.
+
+- `xy` is the filename of xy format of haplotypes, loci majored,
+- `loc` is a Bool vector, specifies which loci to be used,
+- `ids` specifies the ID whose gamete matrix is to be generated.
+"""
+function gametemat(xy::AbstractString, loc::Vector{Bool}, ids)
+    issorted(ids) || sort!(ids)
+    mat, nid, nlc = xymap(xy), length(ids), sum(loc)
+    (length(loc) > size(mat, 1) || 2ids[end] > size(mat, 2)) && error("Not enough loci or IDs")
+    ihp = sort([2ids .- 1; 2ids])
+    gt = copy(mat[loc, ihp])
+    A = zeros(nid, nid)
+    Threads.@threads for i in 1:nid
+        for j in 1:i-1
+            A[i, j] += sum(gt[:, 2i-1] .== gt[:, 2j-1])
+            A[i, j] += sum(gt[:, 2i-1] .== gt[:, 2j])
+            A[i, j] += sum(gt[:, 2i] .== gt[:, 2j-1])
+            A[i, j] += sum(gt[:, 2i] .== gt[:, 2j])
+            A[j, i] = A[i, j]
+        end
+        A[i, i] = 2nlc + 2sum(gt[:, 2i-1] .== gt[:, 2i])
+    end
+    A ./= 2nlc
+end
