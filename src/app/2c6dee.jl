@@ -9,12 +9,12 @@ function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false)
 
     # The working parts
     @info "Simulation begins"
-    #foo = "../test-suite/Xm6k4"
+    foo = "../test-suite/Xm6k4"
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
-        isdir(fdr) && rm(fdr, recursive=true, force=true)
-        foo = cattle_base(ppsz, fdr)                    # ==> base
+        #isdir(fdr) && rm(fdr, recursive=true, force=true)
+        #foo = cattle_base(ppsz, fdr)                    # ==> base
 
         # random selectio for a few generations
         bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
@@ -58,7 +58,7 @@ function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false)
 
         @info "Summarizing repeat $irpt of $nrpt"
         sum_2c6dee(dir, bar, lmp)
-        pos_qtl_frq(dir, bar, ["sgs", "spd", "oag", "ogg", "oap"], ppsz)
+        pos_qtl_frq(dir, bar, ["sgs", "spd", "oeg", "oag", "ogg", "oap"], ppsz)
         keep || rm.(glob("$dir/$bar-*"))
     end
 end
@@ -85,21 +85,21 @@ function sum_2c6dee(dir, bar, lmp)
         ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/2c6dee.bin", "a") do io
             write(io,
-                sp.mbv[2:end],  # 1
-                sp.vbv[2:end],  # as requested by SMS on 2023-05-21, by Theo
-                sp.mF[2:end],   # 3
-                sp.mFr[2:end],  # 4
-                sp.bcr[2:end],  # 5
-                sp.scr[2:end],  # 6
-                sp.dcr[2:end],  # 7
-                sp.np[2:end],   # 8
-                sp.nm[2:end],   # 9
-                ideal[2:end],   # 10
-                va[2:end],      # 11
-                plst[2:end],  # no. of positive qtl lost
-                nlst[2:end],    # 13
-                pmls[2:end],  # no. of positive qtl lost of maf 0.2
-                nmls[2:end])  # no. of negative qtl lost of maf 0.2
+                sp.mbv,  # 1
+                sp.vbv,  # as requested by SMS on 2023-05-21, by Theo
+                sp.mF,   # 3
+                sp.mFr,  # 4
+                sp.bcr,  # 5
+                sp.scr,  # 6
+                sp.dcr,  # 7
+                sp.np,   # 8
+                sp.nm,   # 9
+                ideal,   # 10
+                va,      # 11
+                plst,    # no. of positive qtl lost
+                nlst,    # 13
+                pmls,    # no. of positive qtl lost of maf 0.2
+                nmls)    # no. of negative qtl lost of maf 0.2
         end
     end
 end

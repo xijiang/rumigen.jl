@@ -117,7 +117,7 @@ that the population size is constant of `ppsz`.
 function pos_qtl_frq(dir, bar, sls, ppsz)
     nhp = 2ppsz
     lmp = deserialize("$dir/$bar-map.ser")
-    binapp!("$dir/pfq.bin", lmp.efct[lmp.qtl])
+    #binapp!("$dir/pfq.bin", lmp.efct[lmp.qtl])
     ni = lmp.efct[lmp.qtl] .< 0
     for s in sls
         snp = xymap("$dir/$bar-$s.xy")
@@ -130,7 +130,7 @@ function pos_qtl_frq(dir, bar, sls, ppsz)
             end
             binapp!("$dir/fof.bin", cnt) # frequency of frequency
             frq[ni] = nhp .- frq[ni]
-            binapp!("$dir/pfq.bin", vec(frq))
+            #binapp!("$dir/pfq.bin", vec(frq))
         end
     end
 end
