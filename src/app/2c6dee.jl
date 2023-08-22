@@ -1,5 +1,5 @@
 # echo Selection by optimum contribution | md5sum
-function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false)
+function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false, qt=false) # qt: quick test
     rst, ppsz, nlc, nqtl, nref, h², σₐ = "rst", 200, 50_000, 10_000, 50_000, 0.25, 1.0
     nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
@@ -9,12 +9,12 @@ function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false)
 
     # The working parts
     @info "Simulation begins"
-    foo = "../test-suite/Xm6k4"
+    foo = 
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
-        #isdir(fdr) && rm(fdr, recursive=true, force=true)
-        #foo = cattle_base(ppsz, fdr)                    # ==> base
+        isdir(fdr) && rm(fdr, recursive=true, force=true)
+        foo = qt ? "../test-suite/Xm6k4" : cattle_base(ppsz, fdr) # ==> base
 
         # random selectio for a few generations
         bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
