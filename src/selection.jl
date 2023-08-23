@@ -91,7 +91,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
                        sex = sex, 
                        grt = ped.grt[end] + 1,
                        tbv = tbv, 
-                       pht = pht, ebv = 0., F = 0., Fr = 0.)
+                       pht = pht, ebv = 0., F = 0., Fr = 0., c=0.)
         append!(ped, df)
 
         mp || (ped.pht[ped.sex .== 1] .= missing)
@@ -169,7 +169,7 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
                         sex = rand(0:1, nid),
                         grt = ped.grt[end] + 1,
                         tbv = tbv,
-                        pht = pht, ebv = 0., F = 0., Fr=0.
+                        pht = pht, ebv = 0., F = 0., Fr=0., c=c
                       )
         append!(ped, df)
         ped.pht[ped.sex .==1] .== missing

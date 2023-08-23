@@ -1,7 +1,16 @@
 # echo Selection by optimum contribution | md5sum
-function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false, qt=false) # qt: quick test
-    rst, ppsz, nlc, nqtl, nref, h², σₐ = "rst", 200, 50_000, 10_000, 50_000, 0.25, 1.0
-    nsir, ndam, pres, ngrt, dist = 20, 50, 5, 20, Normal()
+function xps_2c6dee(;
+    nrpt = 100,
+    nlc = 50_000,
+    nqtl = 10_000,
+    nref = 10_000,
+    ngrt = 20,
+    ΔF = 0.011,
+    keep = false,
+    qt = false
+    ) # qt: quick test
+    rst, ppsz, h², σₐ = "rst", 200, 0.25, 1.0
+    nsir, ndam, pres, dist = 20, 50, 5, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
 
     σₑ = sqrt((1 - h²) / h²) * σₐ
@@ -9,12 +18,16 @@ function xps_2c6dee(; nrpt=100, ΔF=0.011, keep=false, qt=false) # qt: quick tes
 
     # The working parts
     @info "Simulation begins"
-    foo = 
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
         isdir(fdr) && rm(fdr, recursive=true, force=true)
-        foo = qt ? "../test-suite/Xm6k4" : cattle_base(ppsz, fdr) # ==> base
+        foo = if qt
+            fdr = "$rst/test-suite"
+            "Xm6k4"
+        else
+            cattle_base(ppsz, fdr) # ==> base
+        end
 
         # random selectio for a few generations
         bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
@@ -67,7 +80,8 @@ function sum_2c6dee(dir, bar, lmp)
     for sel in ["sgs", "spd", "oeg", "oag", "ogg", "oap"]
         ped = deserialize("$dir/$bar-$sel+ped.ser")
         sp = DataFrame(mbv=Float64[], vbv=Float64[], mF=Float64[], mFr=Float64[],
-            bcr=Float64[], scr=Float64[], dcr=Float64[], np=Float64[], nm=Float64[])
+            bcr=Float64[], scr=Float64[], dcr=Float64[], np=Float64[], nm=Float64[],
+            ncp=Float64[], ncm=Float64[])
         for grt in groupby(ped, :grt)
             mbv = mean(grt.tbv)
             vbv = var(grt.tbv)
@@ -80,7 +94,9 @@ function sum_2c6dee(dir, bar, lmp)
             dcr = cor(grt.ebv[dams], grt.tbv[dams])
             np = length(unique(grt.pa))
             nm = length(unique(grt.ma))
-            push!(sp, (mbv, vbv, mF, mFr, bcr, scr, dcr, np, nm))
+            ncp = sum(grt.c[sirs] .> 0)
+            ncm = sum(grt.c[dams] .> 0)
+            push!(sp, (mbv, vbv, mF, mFr, bcr, scr, dcr, np, nm, ncp, ncm))
         end
         ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/2c6dee.bin", "a") do io
@@ -94,12 +110,14 @@ function sum_2c6dee(dir, bar, lmp)
                 sp.dcr,  # 7
                 sp.np,   # 8
                 sp.nm,   # 9
-                ideal,   # 10
-                va,      # 11
-                plst,    # no. of positive qtl lost
-                nlst,    # 13
-                pmls,    # no. of positive qtl lost of maf 0.2
-                nmls)    # no. of negative qtl lost of maf 0.2
+                sp.ncp,  # 10
+                sp.ncm,  # 11
+                ideal,   # 12
+                va,      # 13
+                plst,    # 14. n. of positive qtl lost
+                nlst,    # 15
+                pmls,    # 16. no. of positive qtl lost of maf 0.2
+                nmls)    # 17. no. of negative qtl lost of maf 0.2
         end
     end
 end
@@ -108,9 +126,9 @@ function spl_2c6dee(dir)
     test = "$dir/rst/test-suite"
     ped = deserialize("$test/bar-uhp+ped.ser")
     giv = A⁻¹(ped, "$test/bar-mid.ser")
-    animalModel(ped, giv, .25)
+    animalModel(ped, giv, 0.25)
     lst = 1001:1200
-    A = Amat(ped, m = size(ped, 1))
+    A = Amat(ped, m=size(ped, 1))
     return ped.ebv[lst], ped.sex[lst], A[lst, lst]
 end
 
@@ -119,10 +137,10 @@ end
 This function return the restraint for generation `t` with `ΔF = df` and `k₀ =
 0`.
 """
-function restraint(t, df; k = 0.0)
+function restraint(t, df; k=0.0)
     #for i in 1:t
     #    k += df * (1 - k)
     #end
     # above is equavalent to
-    2(1 - (1 - k) * (1 - df)^(t-1))
+    2(1 - (1 - k) * (1 - df)^(t - 1))
 end
