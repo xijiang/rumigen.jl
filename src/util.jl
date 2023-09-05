@@ -125,7 +125,7 @@ function pos_qtl_frq(rst, xps, bar, sel, ppsz)
         for x in frq
             cnt[x+1] += 1
         end
-        binapp!("$dir/fqf.bin", cnt) # frequency of frequency of QTL
+        binapp!("$rst/$xps/fqf.bin", cnt) # frequency of frequency of QTL
     end
     qgt = nothing
     ref = isodd.(snp[lmp.ref, :])
@@ -135,7 +135,7 @@ function pos_qtl_frq(rst, xps, bar, sel, ppsz)
         for x in frq
             cnt[x+1] += 1
         end
-        binapp!("$dir/frf.bin", cnt) # frequency of frequency of reference
+        binapp!("$rst/$xps/frf.bin", cnt) # frequency of frequency of reference
     end
 end
 
