@@ -34,7 +34,7 @@ end
 
 """
     function Zmat(nm)
-Given a vector of `Bool`s indicating if a phenotype is not missing, return a
+Given a vector of `Bool`sel indicating if a phenotype is not missing, return a
 `Z` sparse matrix of `m` phenotypes and `n` ID, for an animal model.
 """
 function Zmat(nm)
@@ -110,38 +110,32 @@ end
 """
     function pos_qtl_frq(dir, bar, sls, ppsz)
 Count the number of positive QTL alleles of each locus in each generation in
-file `dir/bar-s.xy` for each `s` in `sls`. When QTL effect is positive,
+file `dir/bar-sel.xy` for each `sel` in `sls`. When QTL effect is positive,
 count ones, or count zeros. QTL loci are defined in `dir/bar-map.ser`. Assume
 that the population size is constant of `ppsz`.
 """
-function pos_qtl_frq(dir, bar, sls, ppsz)
+function pos_qtl_frq(rst, xps, bar, sel, ppsz)
     nhp = 2ppsz
-    lmp = deserialize("$dir/$bar-map.ser")
-    #ni = lmp.efct[lmp.qtl] .< 0
-    #nj = rand(Bool, sum(lmp.ref))
-    for s in sls
-        snp = xymap("$dir/$bar-$s.xy")
-        qgt = isodd.(snp[lmp.qtl, :])
-        for i in 1:nhp:size(qgt, 2)
-            frq = sum(qgt[:, i:i+nhp-1], dims=2)
-            cnt = zeros(Int, nhp + 1)
-            for x in frq
-                cnt[x+1] += 1
-            end
-            binapp!("$dir/fqf.bin", cnt) # frequency of frequency of QTL
-            #frq[ni] = nhp .- frq[ni]
+    lmp = deserialize("$rst/$xps/$bar-map.ser")
+    snp = xymap("$dir/$bar-$sel.xy")
+    qgt = isodd.(snp[lmp.qtl, :])
+    for i in 1:nhp:size(qgt, 2)
+        frq = sum(qgt[:, i:i+nhp-1], dims=2)
+        cnt = zeros(Int, nhp + 1)
+        for x in frq
+            cnt[x+1] += 1
         end
-        qgt = nothing
-        ref = isodd.(snp[lmp.ref, :])
-        for i in 1:nhp:size(ref, 2)
-            frq = sum(ref[:, i:i+nhp-1], dims=2)
-            cnt = zeros(Int, nhp + 1)
-            for x in frq
-                cnt[x+1] += 1
-            end
-            binapp!("$dir/frf.bin", cnt) # frequency of frequency of reference
-            #frq[nj] = nhp .- frq[ni]
+        binapp!("$dir/fqf.bin", cnt) # frequency of frequency of QTL
+    end
+    qgt = nothing
+    ref = isodd.(snp[lmp.ref, :])
+    for i in 1:nhp:size(ref, 2)
+        frq = sum(ref[:, i:i+nhp-1], dims=2)
+        cnt = zeros(Int, nhp + 1)
+        for x in frq
+            cnt[x+1] += 1
         end
+        binapp!("$dir/frf.bin", cnt) # frequency of frequency of reference
     end
 end
 
@@ -174,4 +168,58 @@ function equalc(sex, nsir, ndam)
     c[shuffle(sir)[1:nsir]] .= 0.5 / nsir
     c[shuffle(dam)[1:ndam]] .= 0.5 / ndam
     c
+end
+
+function sumPed(rst, xps, bar, lmp, sel)
+    ped = deserialize("$rst/$xps/$bar-$sel+ped.ser")
+    smp = DataFrame(
+        mbv = Float64[], # mean breeding value
+        vbv = Float64[], # variance of breeding values
+        mF  = Float64[], # mean inbreeding coefficient
+        mFr = Float64[], # mean inbreeding coefficient from relatives loci
+        bcr = Float64[], # cor(EBV, TBV) both sexes
+        scr = Float64[], # cor(EBV, TBV) sires
+        dcr = Float64[], # cor(EBV, TBV) dams
+        np  = Float64[], # number of sires in each generation
+        nm  = Float64[], # number of dams in each generation
+        ncp = Float64[], # number of positive sire c values in each generation
+        ncm = Float64[]) # number of positive dam c values in each generation
+    for grt in groupby(ped, :grt)
+        mbv  = mean(grt.tbv)
+        vbv  = var(grt.tbv)
+        mF   = mean(grt.F)
+        mFr  = mean(grt.Fr)
+        bcr  = cor(grt.ebv, grt.tbv)
+        sirs = grt.sex .== 1
+        dams = grt.sex .== 0
+        scr  = cor(grt.ebv[sirs], grt.tbv[sirs])
+        dcr  = cor(grt.ebv[dams], grt.tbv[dams])
+        np   = length(unique(grt.pa))
+        nm   = length(unique(grt.ma))
+        ncp  = sum(grt.c[sirs] .> 0)
+        ncm  = sum(grt.c[dams] .> 0)
+        push!(smp, (mbv, vbv, mF, mFr, bcr, scr, dcr, np, nm, ncp, ncm))
+    end
+    ideal, va, plst, nlst, pmls, nmls = idealPop("$rst/$xps/$bar-$sel.xy", ped.grt, lmp)
+    open("$rst/$xps/$xps.bin", "a") do io
+        write(io,
+            smp.mbv, # 1
+            smp.vbv, # as requested by SMS on 2023-05-21, by Theo
+            smp.mF,  # 3
+            smp.mFr, # 4
+            smp.bcr, # 5
+            smp.scr, # 6
+            smp.dcr, # 7
+            smp.np,  # 8
+            smp.nm,  # 9
+            smp.ncp, # 10
+            smp.ncm, # 11
+            ideal,   # 12
+            va,      # 13
+            plst,    # 14. n. of positive qtl lost
+            nlst,    # 15
+            pmls,    # 16. no. of positive qtl lost of maf 0.2
+            nmls,    # 17. no. of negative qtl lost of maf 0.2
+        )
+    end
 end

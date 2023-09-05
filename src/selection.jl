@@ -28,6 +28,82 @@ function prt4ng(ped, nsir, ndam)
 end
 
 """
+    function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, σₐ = 1)
+This new method is to replace the old `simpleSelection` function. The old one is
+deprecated. The new one has an argument `op` to specify the selection schemes.
+1. random selection
+2. ABLUP
+3. GBLUP
+4. IBLUP
+5. Mass selection
+"""
+function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, σₐ = 1)
+    hdr, h² = readhdr(xy), σₐ^2 / (σₐ^2 + σₑ^2)
+    mt, et, mj, nr, nc = xyhdr(hdr)
+    (mt == 'F' && mj == 0 && nc == 2size(ped, 1)) || error("$xy, or pedigree not right")
+    lms, nfam, nid = sumMap(lmp), max(nsir, ndam), sum(ped.grt .== ped.grt[end])
+    nsib = nid ÷ nfam
+    sibs = [ones(Int, nsib ÷ 2); zeros(Int, nsib - nsib ÷ 2)]
+    sex = repeat(sibs, outer=nfam)
+
+    sel = Dict(1 => "Random",
+               2 => "ABLUP",
+               3 => "GBLUP",
+               4 => "IBLUP",
+               5 => "Mass")
+
+    @info "$(sel[op]) selection on $(basename(xy)) for $ngrt generations"
+    for igrt in 1:ngrt
+        print(" $igrt")
+        agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
+        ogt = zeros(et, nr, nfam * nsib * 2)
+        oebv = ped.ebv[ped.grt.<ped.grt[end]]
+        giv = nothing
+        if op == 1     # random selection
+            ped.ebv = rand(size(ped, 1))
+        elseif op == 2 # ABLUP
+            A = Amat(ped)
+            giv = inv(A)
+            A = nothing
+        elseif op == 3 # GBLUP
+            G = grm(xy, lmp.chip)
+            giv = inv(G)
+            G = nothing
+        elseif op == 4 # IBLUP
+            G = gametemat(xy, lmp.chip, 1:size(ped, 1))
+            giv = inv(G)
+            G = nothing
+        elseif op == 5 # Mass selection
+            mp || (ped.pht[ped.sex .== 1] = rand(sum(ped.sex .== 1)))
+            ped.ebv = disallowmissing(ped.pht)
+            mp || (ped.pht[ped.sex .== 1] .= missing)
+        else
+            error("op = $op not supported")
+        end
+        1 < op < 5 && animalModel(ped, giv, h²) # default using :grt as fixed effect
+        ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
+        pm = repeat(prt4ng(ped, nsir, ndam), outer = nsib)
+        drop(agt, ogt, pm, lms)
+        appendxy!(xy, ogt)
+        tbv, pht = uhp2gp(ogt, lmp, σₑ)
+        df = DataFrame(id=size(ped, 1)+1:size(ped, 1)+nsib*nfam,
+            pa=pm[:, 1], ma=pm[:, 2],
+            sex=sex,
+            grt=ped.grt[end] + 1,
+            tbv=tbv,
+            pht=pht, ebv=0.0, F=0.0, Fr=0.0, c=0.0)
+        append!(ped, df)
+        mp || (ped.pht[ped.sex .== 1] .= missing)
+        agt = nothing
+        nc += nsib * nfam * 2
+    end
+    println()
+    ped.F = inbreeding(xy, lmp.chip)
+    ped.Fr = inbreeding(xy, lmp.ref) # inbreeding by reference loci
+    serialize("$(xy[1:end-3])+ped.ser", ped)
+end
+
+"""
     function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ; ebv = false, gs = false, random = false, mp = true)
 A simple selection strategy.
 - The population is of the same size of the last generation in `ped`.
@@ -46,6 +122,9 @@ A simple selection strategy.
 ## Update 2023-06-13
 - only update EBV of the last generation
   - Or, the accuracy of EBV will be overestimated for the earlier generations.
+## Update 2023-08-24
+- new program with an argument `op` is written.
+- this function is deprecated, but will be kept for previous calls.
 """
 function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
                          ebv = false,
@@ -119,9 +198,13 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
     (mt == 'F' && mj == 0 && nc == 2size(ped, 1)) || error("$xy, or pedigree not right")
     lms = sumMap(lmp)
     nid = sum(ped.grt .== ped.grt[end])
-    #t = length(unique(ped.grt))
+    sel = Dict(1 => "AABLUP",
+               2 => "AGBLUP",
+               3 => "GGBLUP",
+               4 => "IGBLUP",
+               5 => "IIBLUP")
     
-    @info "Selection on $(basename(xy)), for $ngrt generations"
+    @info "$(sel[op]) selection on $(basename(xy)), for $ngrt generations"
     for igrt ∈ 1:ngrt
         print(" $igrt")
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
@@ -129,29 +212,35 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
         oebv = ped.ebv[ped.grt .< ped.grt[end]]
         giv = A₂₂ = nothing
         pool = findall(ped.grt .== ped.grt[end]) # ID of current generation
-        if op == 1
+        if op == 1     # AABLUP
             A = Amat(ped)
             A₂₂ = copy(A[pool, pool])
             giv = inv(A)
             A = nothing
-        elseif op == 2
+        elseif op == 2 # AGBLUP
             G = grm(xy, lmp.chip)
             giv = inv(G)
             G = nothing
             A = Amat(ped)
             A₂₂ = copy(A[pool, pool])
             A = nothing
-        elseif op == 3
+        elseif op == 3 # GGBLUP
             G = grm(xy, lmp.chip)
             giv = inv(G)
             A₂₂ = copy(G[pool, pool])
             G = nothing
-        elseif op == 4
+        elseif op == 4 # IGBLUP
             G = grm(xy, lmp.chip)
             giv = inv(G)
             ids = findall(ped.grt .== ped.grt[end])
             A₂₂ = gametemat(xy, lmp.chip, ids)
             A = nothing
+        elseif op == 5 # IIBLUP
+            G = gametemat(xy, lmp.chip, 1:size(ped, 1))
+            giv = inv(G)
+            ids = findall(ped.grt .== ped.grt[end])
+            A₂₂ = copy(G[ids, ids])
+            G = nothing
         else
             error("op = $op not supported")
         end

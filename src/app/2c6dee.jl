@@ -121,26 +121,3 @@ function sum_2c6dee(dir, bar, lmp)
         end
     end
 end
-
-function spl_2c6dee(dir)
-    test = "$dir/rst/test-suite"
-    ped = deserialize("$test/bar-uhp+ped.ser")
-    giv = A⁻¹(ped, "$test/bar-mid.ser")
-    animalModel(ped, giv, 0.25)
-    lst = 1001:1200
-    A = Amat(ped, m=size(ped, 1))
-    return ped.ebv[lst], ped.sex[lst], A[lst, lst]
-end
-
-"""
-    function restraint(t, df)
-This function return the restraint for generation `t` with `ΔF = df` and `k₀ =
-0`.
-"""
-function restraint(t, df; k=0.0)
-    #for i in 1:t
-    #    k += df * (1 - k)
-    #end
-    # above is equavalent to
-    2(1 - (1 - k) * (1 - df)^(t - 1))
-end
