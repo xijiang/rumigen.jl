@@ -117,7 +117,7 @@ that the population size is constant of `ppsz`.
 function pos_qtl_frq(rst, xps, bar, sel, ppsz)
     nhp = 2ppsz
     lmp = deserialize("$rst/$xps/$bar-map.ser")
-    snp = xymap("$dir/$bar-$sel.xy")
+    snp = xymap("$rst/$xps/$bar-$sel.xy")
     qgt = isodd.(snp[lmp.qtl, :])
     for i in 1:nhp:size(qgt, 2)
         frq = sum(qgt[:, i:i+nhp-1], dims=2)
