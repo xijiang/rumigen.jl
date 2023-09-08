@@ -56,9 +56,8 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
     for igrt in 1:ngrt
         print(" $igrt")
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
-        ogt = zeros(et, nr, nfam * nsib * 2)
         oebv = ped.ebv[ped.grt.<ped.grt[end]]
-        giv = nothing
+        giv, mid = nothing, size(ped, 1)
         if op == 1     # random selection
             ped.ebv = rand(size(ped, 1))
         elseif op == 2 # ABLUP
@@ -70,7 +69,8 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
             giv = inv(G)
             G = nothing
         elseif op == 4 # IBLUP
-            G = gametemat(xy, lmp.chip, 1:size(ped, 1))
+            G = zeros(1:mid, 1:mid)
+            read!("$(xy[1:end-3]).bin", G)
             giv = inv(G)
             G = nothing
         elseif op == 5 # Mass selection
@@ -81,11 +81,14 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
             error("op = $op not supported")
         end
         1 < op < 5 && animalModel(ped, giv, h²) # default using :grt as fixed effect
-        ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
+        giv = nothing
+        ogt = zeros(et, nr, nfam * nsib * 2)
+        ped.ebv[ped.grt.<ped.grt[end]] = oebv # restore previously calculated EBV
         pm = repeat(prt4ng(ped, nsir, ndam), outer = nsib)
         drop(agt, ogt, pm, lms)
         appendxy!(xy, ogt)
         tbv, pht = uhp2gp(ogt, lmp, σₑ)
+        ogt = nothing
         df = DataFrame(id=size(ped, 1)+1:size(ped, 1)+nsib*nfam,
             pa=pm[:, 1], ma=pm[:, 2],
             sex=sex,
@@ -93,6 +96,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
             tbv=tbv,
             pht=pht, ebv=0.0, F=0.0, Fr=0.0, c=0.0)
         append!(ped, df)
+        op == 4 && igrt ≠ ngrt && updateIBDM(xy, "$(xy[1:end-3]).bin", lmp.chip, mid, nid)
         mp || (ped.pht[ped.sex .== 1] .= missing)
         agt = nothing
         nc += nsib * nfam * 2
@@ -212,6 +216,7 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
         oebv = ped.ebv[ped.grt .< ped.grt[end]]
         giv = A₂₂ = nothing
         pool = findall(ped.grt .== ped.grt[end]) # ID of current generation
+        mid = size(ped, 1)
         if op == 1     # AABLUP
             A = Amat(ped)
             A₂₂ = copy(A[pool, pool])
@@ -232,14 +237,13 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
         elseif op == 4 # IGBLUP
             G = grm(xy, lmp.chip)
             giv = inv(G)
-            ids = findall(ped.grt .== ped.grt[end])
-            A₂₂ = gametemat(xy, lmp.chip, ids)
-            A = nothing
+            A₂₂ = gametemat(xy, lmp.chip, pool)
+            G = nothing
         elseif op == 5 # IIBLUP
-            G = gametemat(xy, lmp.chip, 1:size(ped, 1))
+            G = zeros(1:mid, 1:mid)
+            read!("$(xy[1:end-3]).bin", G)
             giv = inv(G)
-            ids = findall(ped.grt .== ped.grt[end])
-            A₂₂ = copy(G[ids, ids])
+            A₂₂ = copy(G[pool, pool])
             G = nothing
         else
             error("op = $op not supported")
@@ -252,6 +256,7 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
         pm = randomMate(DataFrame(sex=ped.sex[pool], c=c), nid) .+ (size(ped, 1) - nid)
         drop(agt, ogt, pm, lms)
         appendxy!(xy, ogt)
+        op == 5 && igrt ≠ ngrt && updateIBDM(xy, "$(xy[1:end-3]).bin", lmp.chip, mid, nid) 
         tbv, pht = uhp2gp(ogt, lmp, σₑ)
         df = DataFrame( id = size(ped, 1) + 1: size(ped, 1) + size(pm, 1),
                         pa = pm[:, 1], ma = pm[:, 2],

@@ -223,3 +223,49 @@ function sumPed(rst, xps, bar, lmp, sel)
         )
     end
 end
+
+"""
+    function prepFdr(rst::AbstractString, xps::AbstractString, quick=false)
+Prepare a founder population. If `quick` is `true`, the founder population is
+prepared from the test-suite. Otherwise, the founder population is prepared from
+the `founder` folder.
+"""
+function prepFdr(rst::AbstractString,
+    quick,
+    ppsz,
+    )
+    fdr, foo = "$rst/test-suite", "founder"
+    if quick
+        file = "$rst/test-suite/founder-hap.xy"
+        create = !isfile(file)
+        if isfile(file)
+            a = zeros(Int, 3)
+            read!(file, a)
+            create = a[2] < 2ppsz
+        end
+        if create
+            baz = cattle_base(ppsz, fdr)
+            mv("$rst/test-suite/$baz-map.ser", "$rst/test-suite/founder-map.ser")
+            mv("$rst/test-suite/$baz-hap.xy", "$rst/test-suite/founder-hap.xy")
+        end
+    else
+        fdr = "$rst/founder"
+        isdir(fdr) && rm(fdr, recursive=true, force=true)
+        mkpath(fdr)
+        foo = cattle_base(ppsz, fdr)
+    end
+    fdr, foo
+end
+
+function updateIBDM(xy, bin, snp, mid, nid)
+    tid = mid + nid
+    ra, rb = 1:mid, mid+1:tid
+    G = zeros(tid, tid)
+    read!(bin, view(G, ra, ra))  # read the upper left block
+    K = gametemat(xy, snp, ra, rb)
+    copyto!(view(G, ra, rb), K)  # copy the upper right block
+    copyto!(view(G, rb, ra), K') # copy the lower left block
+    K = gametemat(xy, snp, rb)
+    copyto!(view(G, rb, rb), K)  # copy the lower right block
+    write(bin, G)
+end

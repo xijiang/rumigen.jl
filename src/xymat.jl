@@ -377,10 +377,13 @@ obtained from dense genotypes very accurately.
 - `loc` is a Bool vector, specifies which loci to be used,
 - `ids` specifies the ID whose gamete matrix is to be generated.
 """
-function gametemat(xy::AbstractString, loc::Vector{Bool}, ids)
+function gametemat(xy::AbstractString,
+    loc::AbstractVector{Bool},
+    ids::AbstractVector{Int},
+    )
     issorted(ids) || sort!(ids)
     mat, nid, nlc = xymap(xy), length(ids), sum(loc)
-    (length(loc) > size(mat, 1) || 2ids[end] > size(mat, 2)) && error("Not enough loci or IDs")
+    (length(loc) ≠ size(mat, 1) || 2ids[end] > size(mat, 2)) && error("Not number of loci or IDs")
     ihp = sort([2ids .- 1; 2ids])
     gt = copy(mat[loc, ihp])
     A = zeros(nid, nid)
@@ -393,6 +396,40 @@ function gametemat(xy::AbstractString, loc::Vector{Bool}, ids)
             A[j, i] = A[i, j]
         end
         A[i, i] = 2nlc + 2sum(gt[:, 2i-1] .== gt[:, 2i])
+    end
+    A ./= 2nlc
+end
+
+"""
+    function gametemat(xy::AbstractString, loc, ids, jds)
+Calculate mean IBD relationships between `ids` and `jds` using the IBD
+information stored in the `xy` file. It them average the 4 cells to calculate
+the relationships between ID based on IBD information. In reality, these IBD
+information can be obtained from dense genotypes very accurately.
+"""
+function gametemat(xy::AbstractString, # uniquely coded genotypes
+    loc::AbstractVector{Bool}, # specify which loci to be used
+    ids::AbstractVector{Int}, # specify which IDs to be used
+    jds::AbstractVector{Int}, # specify which IDs to be used
+    )
+    issorted(ids) || sort!(ids)
+    issorted(jds) || sort!(jds)
+    mat, nlc, mid, nid = xymap(xy), sum(loc), length(ids), length(jds)
+    (length(loc) ≠ size(mat, 1) || 
+     2ids[end] > size(mat, 2) ||
+     2jds[end] > size(mat, 2)) && error("Not number of loci or IDs")
+    ihp = sort([2ids .- 1; 2ids])
+    jhp = sort([2jds .- 1; 2jds])
+    igt = copy(mat[loc, ihp])
+    jgt = copy(mat[loc, jhp])
+    A = zeros(mid, nid)
+    Threads.@threads for i in 1:mid
+        for j in 1:nid
+            A[i, j] += sum(igt[:, 2i-1] .== jgt[:, 2j-1])
+            A[i, j] += sum(igt[:, 2i-1] .== jgt[:, 2j])
+            A[i, j] += sum(igt[:, 2i] .== jgt[:, 2j-1])
+            A[i, j] += sum(igt[:, 2i] .== jgt[:, 2j])
+        end
     end
     A ./= 2nlc
 end
