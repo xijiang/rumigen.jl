@@ -1,3 +1,13 @@
+abstract type Variation end
+struct SNP <: Variation
+    a::Int8
+end
+
+struct USNP <: Variation
+    a::Int8
+    id::UInt16
+end
+
 # the types that might be used in matrices for breeding
 const vldtypes = (Bool, Int8, Int16, Int32, Int64, Int128, UInt8, UInt16,
     UInt32, UInt64, UInt128, Float16, Float32, Float64)
@@ -246,19 +256,19 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
 end
 
 """
-    function codesnp(iv::AbstractArray{Int8}, ov::AbstractArray{UInt16})
+    function codesnp(iv::AbstractArray{Int8}, ov::AbstractArray{UInt16}, inc = 2)
 Code SNP alleles of `0` and `1` in `iv` uniquely into `ov`.
 """
-function codesnp(iv::AbstractArray{Int8}, ov::AbstractArray{UInt16})
+function codesnp(iv::AbstractArray{Int8}, ov::AbstractArray{UInt16}, inc = 2)
     (length(iv) == length(ov)) || error("Arrays have different sizes")
     x, y = 0, 1
     for i in eachindex(iv)
         if iv[i] == 0
             ov[i] = x
-            x += 2
+            x += inc
         else
             ov[i] = y
-            y += 2
+            y += inc
         end
     end
     nothing
@@ -270,7 +280,7 @@ Uniquely number SNP alleles and write the results to a new file with the same
 `bar` name in the same directory of `ixy`. The result file is usually for
 breeding, hence it is by default loci majored to benefit from sequential I/O.
 """
-function uniqSNP(ixy::AbstractString; LociMajored = true)
+function uniqSNP(ixy::AbstractString; LociMajored = true, inc = 2)
     (isfile(ixy)) || error("File $ixy doesn't exist")
     bar = begin
         bn = basename(ixy)
@@ -295,11 +305,11 @@ function uniqSNP(ixy::AbstractString; LociMajored = true)
         usnp = Mmap.mmap(io, Matrix{UInt16}, (or, oc), 24)
         if LociMajored && mj == cc
             for i in 1:or
-                codesnp(view(gt, i, :), view(usnp, i, :))
+                codesnp(view(gt, i, :), view(usnp, i, :), inc)
             end
         elseif !LociMajored && mj == cc
             for i in 1:oc
-                codesnp(gt[:, i], usnp[:, i])
+                codesnp(gt[:, i], usnp[:, i], inc)
             end
         end
         Mmap.sync!(usnp)

@@ -50,7 +50,8 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
                2 => "ABLUP",
                3 => "GBLUP",
                4 => "IBLUP",
-               5 => "Mass")
+               5 => "Mass",
+               )
 
     @info "$(sel[op]) selection on $(basename(xy)) for $ngrt generations"
     for igrt in 1:ngrt

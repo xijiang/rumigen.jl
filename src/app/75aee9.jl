@@ -31,7 +31,7 @@ function xps_75aee9( ;
     σₑ = sqrt((1 - h²) / h²) * σₐ
     isdir(dir) && rm(dir, recursive=true, force=true)
     mkpath(dir)
-    serialize("$dir/par.bin", (nlc=nlc, nqtl=nqtl, nref=nref, ngrt=ngrt, ΔF=ΔF,
+    serialize("$dir/par.ser", (nlc=nlc, nqtl=nqtl, nref=nref, ngrt=ngrt, ΔF=ΔF,
         nrpt=nrpt, rst=rst, ppsz=ppsz, h²=h², σₐ=σₐ, nsir=nsir, ndam=ndam,
         pres=pres, dist=dist, sim=sim, quick_test=quick_test))
     # use Dict(pairs(par)) to reconstruct the par dict, remember to include Distributions
