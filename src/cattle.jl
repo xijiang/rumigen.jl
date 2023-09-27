@@ -8,13 +8,13 @@ Simulate SNP on cattle autosomes.
 The chromosome sizes are from https://www.ncbi.nlm.nih.gov/assembly/?term=bos+taurus.
 """
 function cattle_genome(macs, nid::Int; dir=pwd())
-    nchr = 29
     # https://www.ncbi.nlm.nih.gov/projects/r_gencoll/ftp_service/nph-gc-ftp-service.cgi/?HistoryId=MCID_642d5d40ceff2e2c64293c60&QueryKey=1&ReleaseType=RefSeq&FileType=GENOME_FASTA&Flat=true
     chrs = [158534110, 136231102, 121005158, 120000601, 120089316, 117806340,
-        110682743, 113319770, 105454467, 103308737, 106982474, 87216183,
-        83472345, 82403003, 85007780, 81013979, 73167244, 65820629, 63449741,
-        71974595, 69862954, 60773035, 52498615, 62317253, 42350435, 51992305,
-        45612108, 45940150, 51098607]
+            110682743, 113319770, 105454467, 103308737, 106982474, 87216183,
+            83472345, 82403003, 85007780, 81013979, 73167244, 65820629, 63449741,
+            71974595, 69862954, 60773035, 52498615, 62317253, 42350435, 51992305,
+            45612108, 45940150, 51098607]
+    nchr = length(chrs)
 
     isdir(dir) || mkpath(dir)
     wdir = mktempdir(dir)

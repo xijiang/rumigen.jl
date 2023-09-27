@@ -43,7 +43,7 @@ end
 Normalize QTL effect, such that the TBV variance is within `1.0 ± ϵ`.
 """
 function norm_qtl(Q::Matrix{Int8}, efct, ϵ)
-    nqtl, nid = size(Q)
+    nqtl= size(Q, 1)
     bv = Q'efct
     m, s = mean(bv), std(bv)
     while abs(m) > ϵ || abs(s - 1) > ϵ
