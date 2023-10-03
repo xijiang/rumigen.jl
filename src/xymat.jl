@@ -377,6 +377,20 @@ function xymap(xy::AbstractString)
 end
 
 """
+    function _mIBD(a::T, b::T, c::T, d::T) where T<:AbstractVector
+Given the 4 haplotypes of a pair of individuals, calculate the mean IBD.
+This function ignores bounder check, and is set internal.
+"""
+function _mIBD(a::T, b::T, c::T, d::T) where T<:AbstractVector
+    r = 0.
+    r += sum(a .== c)
+    r += sum(a .== d)
+    r += sum(b .== c)
+    r += sum(b .== d)
+    r /= 2length(a)
+end
+
+"""
     function gametemat(xy::AbstractString, loc, ids)
 Mean gamete matrix (mgm) uss the IBD info stored in the `xy` file to generate a
 gamete matrix. It them average the 4 cells to calculate the relationships
@@ -392,11 +406,16 @@ function gametemat(xy::AbstractString,
     ids::AbstractVector{Int},
     )
     issorted(ids) || sort!(ids)
-    mat, nid, nlc = xymap(xy), length(ids), sum(loc)
+    mat, nid = xymap(xy), length(ids)
     (length(loc) ≠ size(mat, 1) || 2ids[end] > size(mat, 2)) && error("Not number of loci or IDs")
     ihp = sort([2ids .- 1; 2ids])
     gt = copy(mat[loc, ihp])
-    A = zeros(nid, nid)
+    IBD = zeros(nid, nid)
+    Threads.@threads for (i, j) in [(i, j) for i in 1:nid for j in 1:i]
+        IBD[j, i] = IBD[i, j] = _mIBD(view(gt, :, 2i-1), view(gt, :, 2i), view(gt, :, 2j-1), view(gt, :, 2j))
+    end
+    IBD
+    #=
     Threads.@threads for i in 1:nid
         for j in 1:i-1
             A[i, j] += sum(gt[:, 2i-1] .== gt[:, 2j-1])
@@ -408,6 +427,7 @@ function gametemat(xy::AbstractString,
         A[i, i] = 2nlc + 2sum(gt[:, 2i-1] .== gt[:, 2i])
     end
     A ./= 2nlc
+    =#
 end
 
 """
@@ -424,7 +444,7 @@ function gametemat(xy::AbstractString, # uniquely coded genotypes
     )
     issorted(ids) || sort!(ids)
     issorted(jds) || sort!(jds)
-    mat, nlc, mid, nid = xymap(xy), sum(loc), length(ids), length(jds)
+    mat, mid, nid = xymap(xy), length(ids), length(jds)
     (length(loc) ≠ size(mat, 1) || 
      2ids[end] > size(mat, 2) ||
      2jds[end] > size(mat, 2)) && error("Not number of loci or IDs")
@@ -432,6 +452,12 @@ function gametemat(xy::AbstractString, # uniquely coded genotypes
     jhp = sort([2jds .- 1; 2jds])
     igt = copy(mat[loc, ihp])
     jgt = copy(mat[loc, jhp])
+    IBD = zeros(mid, nid)
+    Threads.@threads for (i, j) in [(i, j) for i in 1:mid for j in 1:nid]
+        IBD[i, j] = _mIBD(view(igt, :, 2i-1), view(igt, :, 2i), view(jgt, :, 2j-1), view(jgt, :, 2j))
+    end
+    IBD
+    #=
     A = zeros(mid, nid)
     Threads.@threads for i in 1:mid
         for j in 1:nid
@@ -442,4 +468,5 @@ function gametemat(xy::AbstractString, # uniquely coded genotypes
         end
     end
     A ./= 2nlc
+    =#
 end
