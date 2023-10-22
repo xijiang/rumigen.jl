@@ -18,7 +18,7 @@ function xps_75aee9( ;
     ppsz = 200,
     h² = 0.25,
     σₐ = 1.0,
-    nsir = 20,
+    nsir = 25,
     ndam = 50,
     pres = 5,
     dist = Normal(),
@@ -36,7 +36,7 @@ function xps_75aee9( ;
         pres=pres, dist=dist, sim=sim, quick_test=quick_test))
     # use Dict(pairs(par)) to reconstruct the par dict, remember to include Distributions
     scheme_1 = ("ran", "spd", "sgs", "sis", "sms")
-    scheme_2 = ("oap", "oag", "ogg", "oig", "oii")
+    scheme_ocs = ("oap", "oag", "ogg", "oig", "oii")
 
     # The working parts
     @info "Simulation begins"
@@ -66,7 +66,7 @@ function xps_75aee9( ;
             pos_qtl_frq(rst, sim, bar, sel, ppsz)
         end
         for op in 1:5
-            pop, sel = copy(ped), scheme_2[op]
+            pop, sel = copy(ped), scheme_ocs[op]
             cp("$dir/$bar-uhp.xy", "$dir/$bar-$sel.xy", force=true)
             optSelection("$dir/$bar-$sel.xy", pop, lmp, ngrt, σₑ, ΔF, op=op, k₀=0.027)
             sumPed(rst, sim, bar, lmp, sel)

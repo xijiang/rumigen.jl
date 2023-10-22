@@ -112,6 +112,7 @@ function initPedigree(xy, lmp, σₑ; fg = 0)
               ebv = 0.,
               F = 0.,
               Fr = 0.,
+              Fp = 0.,
               c = 0.)
 end
 

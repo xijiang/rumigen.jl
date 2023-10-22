@@ -95,7 +95,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
             sex=sex,
             grt=ped.grt[end] + 1,
             tbv=tbv,
-            pht=pht, ebv=0.0, F=0.0, Fr=0.0, c=0.0)
+            pht=pht, ebv=0.0, F=0.0, Fr=0.0, Fp=0., c=0.0)
         append!(ped, df)
         op == 4 && igrt ≠ ngrt && updateIBDM(xy, "$(xy[1:end-3]).bin", lmp.chip, mid, nid)
         mp || (ped.pht[ped.sex .== 1] .= missing)
@@ -105,6 +105,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
     println()
     ped.F = inbreeding(xy, lmp.chip)
     ped.Fr = inbreeding(xy, lmp.ref) # inbreeding by reference loci
+    ped.Fp = diag(Amat(ped)) .- 1
     serialize("$(xy[1:end-3])+ped.ser", ped)
 end
 
@@ -185,6 +186,7 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ;
     println()
     ped.F = inbreeding(xy, lmp.chip)
     ped.Fr = inbreeding(xy, lmp.ref) # inbreeding by reference loci
+    ped.Fp = diag(Amat(ped)) .- 1
     serialize("$(xy[1:end-3])+ped.ser", ped)
 end
 
@@ -264,7 +266,7 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
                         sex = rand(0:1, nid),
                         grt = ped.grt[end] + 1,
                         tbv = tbv,
-                        pht = pht, ebv = 0., F = 0., Fr=0., c=c
+                        pht = pht, ebv = 0., F = 0., Fr=0., Fp=0., c=c
                       )
         append!(ped, df)
         ped.pht[ped.sex .==1] .== missing
@@ -274,5 +276,6 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
     println()
     ped.F = inbreeding(xy, lmp.chip)
     ped.Fr = inbreeding(xy, lmp.ref) # inbreeding by reference loci
+    ped.Fp = diag(Amat(ped)) .- 1
     serialize("$(xy[1:end-3])+ped.ser", ped)
 end

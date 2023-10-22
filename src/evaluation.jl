@@ -153,7 +153,10 @@ end
 Given a genotype file `xy`, generation info `grt` and a linkage map `lmp`,
 calculate the maximum level of an ideal population.
 
-Add QTL change for allele frequencies in (0, maf = 0.2). 2023-07-17
+Add QTL change for allele frequencies in (0, maf = 0.2). 2023-07-17.
+
+Ideal needs to be doubled, as the maximum genotype is 2. will modify this later.
+2023-10-22, or remember to double the ideal value in summary
 """
 function idealPop(xy, grt, lmp; maf = 0.2)
     # requirement check

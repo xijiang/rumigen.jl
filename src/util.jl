@@ -177,6 +177,7 @@ function sumPed(rst, xps, bar, lmp, sel)
         vbv = Float64[], # variance of breeding values
         mF  = Float64[], # mean inbreeding coefficient
         mFr = Float64[], # mean inbreeding coefficient from relatives loci
+        mFp = Float64[], # mean inbreeding coefficient from pedigree
         bcr = Float64[], # cor(EBV, TBV) both sexes
         scr = Float64[], # cor(EBV, TBV) sires
         dcr = Float64[], # cor(EBV, TBV) dams
@@ -189,6 +190,7 @@ function sumPed(rst, xps, bar, lmp, sel)
         vbv  = var(grt.tbv)
         mF   = mean(grt.F)
         mFr  = mean(grt.Fr)
+        mFp  = mean(grt.Fp)
         bcr  = cor(grt.ebv, grt.tbv)
         sirs = grt.sex .== 1
         dams = grt.sex .== 0
@@ -198,7 +200,7 @@ function sumPed(rst, xps, bar, lmp, sel)
         nm   = length(unique(grt.ma))
         ncp  = sum(grt.c[sirs] .> 0)
         ncm  = sum(grt.c[dams] .> 0)
-        push!(smp, (mbv, vbv, mF, mFr, bcr, scr, dcr, np, nm, ncp, ncm))
+        push!(smp, (mbv, vbv, mF, mFr, mFp, bcr, scr, dcr, np, nm, ncp, ncm))
     end
     ideal, va, plst, nlst, pmls, nmls = idealPop("$rst/$xps/$bar-$sel.xy", ped.grt, lmp)
     open("$rst/$xps/$xps.bin", "a") do io
@@ -207,19 +209,20 @@ function sumPed(rst, xps, bar, lmp, sel)
             smp.vbv, # as requested by SMS on 2023-05-21, by Theo
             smp.mF,  # 3
             smp.mFr, # 4
-            smp.bcr, # 5
-            smp.scr, # 6
-            smp.dcr, # 7
-            smp.np,  # 8
-            smp.nm,  # 9
-            smp.ncp, # 10
-            smp.ncm, # 11
-            ideal,   # 12
-            va,      # 13
-            plst,    # 14. n. of positive qtl lost
-            nlst,    # 15
-            pmls,    # 16. no. of positive qtl lost of maf 0.2
-            nmls,    # 17. no. of negative qtl lost of maf 0.2
+            smp.mFp, # 5
+            smp.bcr, # 6
+            smp.scr, # 7
+            smp.dcr, # 8
+            smp.np,  # 9
+            smp.nm,  # 10
+            smp.ncp, # 11
+            smp.ncm, # 12
+            ideal,   # 13
+            va,      # 14
+            plst,    # 15. n. of positive qtl lost
+            nlst,    # 16
+            pmls,    # 17. no. of positive qtl lost of maf 0.2
+            nmls,    # 18. no. of negative qtl lost of maf 0.2
         )
     end
 end
@@ -245,8 +248,8 @@ function prepFdr(rst::AbstractString,
         end
         if create
             baz = cattle_base(ppsz, fdr)
-            mv("$rst/test-suite/$baz-map.ser", "$rst/test-suite/founder-map.ser")
-            mv("$rst/test-suite/$baz-hap.xy", "$rst/test-suite/founder-hap.xy")
+            mv("$rst/test-suite/$baz-map.ser", "$rst/test-suite/founder-map.ser", force=true)
+            mv("$rst/test-suite/$baz-hap.xy", "$rst/test-suite/founder-hap.xy", force=true)
         end
     else
         fdr = "$rst/founder"
