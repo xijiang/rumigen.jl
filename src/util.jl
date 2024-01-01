@@ -272,3 +272,8 @@ function updateIBDM(xy, bin, snp, mid, nid)
     copyto!(view(G, rb, rb), K)  # copy the lower right block
     write(bin, G)
 end
+
+function commas(num::Integer)
+    str = string(num)
+    return replace(str, r"(?<=[0-9])(?=(?:[0-9]{3})+(?![0-9]))" => ",")
+end

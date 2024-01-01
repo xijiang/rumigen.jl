@@ -25,6 +25,7 @@ include("selection.jl")
 include("simulation.jl")
 include("term.jl")
 include("util.jl")
+include("vcf.jl")
 include("xymat.jl")
 
 Relation = Dict{Tuple{Int, Int}, Float64}

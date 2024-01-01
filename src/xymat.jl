@@ -470,3 +470,19 @@ function gametemat(xy::AbstractString, # uniquely coded genotypes
     A ./= 2nlc
     =#
 end
+
+"""
+    function _vcfstr2allele(str, loc, sep)
+Interpret a line of VCF file and return the chromosome number, position, and
+allele frequency. It also fills the `loc` array with the parsed genotypes.
+"""
+function _vcfstr2allele(str, loc, sep)
+    v = split(str, sep)
+    id = 0
+    for gt in v[10:end]
+        id += 1
+        loc[2id-1] = parse(Int8, gt[1])
+        loc[2id]   = parse(Int8, gt[3])
+    end
+    parse(Int8, v[1]), parse(Int32, v[2]), sum(loc) / 2id
+end
