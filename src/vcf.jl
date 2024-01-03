@@ -69,7 +69,7 @@ It deals with 10k loci parallelly at a time.
 """
 function vcf2xy(vcf::AbstractString, xy::AbstractString; nln=10000)
     nlc, nid = vcfdim(vcf)
-    hdr = xyheader(nlc, 2nlc)
+    hdr = xyheader(nlc, 2nid)
 
     mmp = DataFrame(chr=zeros(Int8, nlc), pos=zeros(Int32, nlc), frq=zeros(nlc)) # map
     write(xy * "-hap.xy", Ref(hdr))
@@ -136,7 +136,7 @@ function zvcf2xy(zvcf::AbstractString, xy::AbstractString; nln=10000)
     end
 
     open(`pigz -dc $zvcf`, "r+") do ii
-        hdr = xyheader(nlc, 2nlc)
+        hdr = xyheader(nlc, 2nid)
         mmp = DataFrame(chr=zeros(Int8, nlc), pos=zeros(Int32, nlc), frq=zeros(nlc)) # map
         write(xy * "-hap.xy", Ref(hdr))
 
