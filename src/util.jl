@@ -202,7 +202,7 @@ function sumPed(rst, xps, bar, lmp, sel)
         ncm  = sum(grt.c[dams] .> 0)
         push!(smp, (mbv, vbv, mF, mFr, mFp, bcr, scr, dcr, np, nm, ncp, ncm))
     end
-    ideal, va, plst, nlst, pmls, nmls = idealPop("$rst/$xps/$bar-$sel.xy", ped.grt, lmp)
+    ideal, va, plst, nlst, pmls, nmls, clst, rlst, cmls, rmls = idealPop("$rst/$xps/$bar-$sel.xy", ped.grt, lmp)
     open("$rst/$xps/$xps.bin", "a") do io
         write(io,
             smp.mbv, # 1
@@ -219,11 +219,15 @@ function sumPed(rst, xps, bar, lmp, sel)
             smp.ncm, # 12
             ideal,   # 13
             va,      # 14
-            plst,    # 15. n. of positive qtl lost
-            nlst,    # 16
-            pmls,    # 17. no. of positive qtl lost of maf 0.2
-            nmls,    # 18. no. of negative qtl lost of maf 0.2
-        )
+            plst,    # 15. n. of positive qtl fixed
+            nlst,    # 16. n. of negative qtl fixed
+            pmls,    # 17. no. of positive qtl fixed of maf 0.2
+            nmls,    # 18. no. of negative qtl fixed of maf 0.2
+            clst,    # 19. no. of chip snps fixed
+            rlst,    # 20. no. of reference snps fixed
+            cmls,    # 21. no. of chip snps fixed of maf 0.2
+            rmls,    # 22. no. of reference snps fixed of maf 0.2
+            )
     end
 end
 

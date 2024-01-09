@@ -171,12 +171,17 @@ function idealPop(xy, grt, lmp; maf = 0.2)
     (mt == 'F' && mj == 0) || error("Not a proper file.")
     ir == size(lmp, 1) || error("Genotypes and linkage map don't match.")
     ic == 2length(grt) || error("Genotypes and pedigree don't match.")
+    hgrt = repeat(grt, inner = 2)
     (et == Int8 || et == UInt16) || error("Not a proper genotype file.")
     gt = if et == Int8
         Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
     else
         Int8.(isodd.(Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)))
     end
+    pc = mean(view(gt, lmp.chip, hgrt .== 0), dims = 2)
+    nchip = sum(lmp.chip)
+    pr = mean(view(gt, lmp.ref, hgrt .== 0), dims = 2)
+    nref = sum(lmp.ref)
     qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
     i₀ = findall(grt .== 0)  # indices of the starting generation
     frq = mean(qg[:, i₀], dims = 2) / 2.
@@ -185,30 +190,33 @@ function idealPop(xy, grt, lmp; maf = 0.2)
     # also use float for qtl fixation counting for ease of retrieval
     ideal, va, np, nn, fixed = Float64[], Float64[], Float64[], Float64[], Set{Int64}()
     nmp, nmn = Float64[], Float64[]
+    clst, rlst, cfix, rfix = Float64[], Float64[], Set{Int64}(), Set{Int64}()
+    cmls, rmls, cmfx, rmfx = Float64[], Float64[], Set{Int64}(), Set{Int64}()
     for ig in sort(unique(grt))
-        iqg = qg[:, grt .== ig] # QTL genotypes of the ith generation
+        iqg = view(qg, :, grt .== ig) # QTL genotypes of the ith generation
         plost, nlost = 0, 0  # positive and negative QTL lost
         pmlst, nmlst = 0, 0  # positive and negative QTL lost of maf
         for (i, v) in enumerate(efct)
             i ∈ fixed && continue
+            sqg = sum(iqg[i, :])
             if v > 0
-                if all(iqg[i, :] .== 0)
+                if sqg == 0
                     best -= v
                     plost += 1
                     (frq[i] < maf || frq[i] > 1 - maf) && (pmlst += 1)
                     push!(fixed, i)
-                elseif all(iqg[i, :] .== 2)
+                elseif sqg == ic
                     nlost += 1
                     (frq[i] < maf || frq[i] > 1 - maf) && (nmlst += 1)
                     push!(fixed, i)
                 end
             else
-                if all(iqg[i, :] .== 2)
+                if sqg == ic
                     best += v
                     plost += 1
                     (frq[i] < maf || frq[i] > 1 - maf) && (pmlst += 1)
                     push!(fixed, i)
-                elseif all(iqg[i, :] .== 0)
+                elseif sqg == 0
                     nlost += 1
                     (frq[i] < maf || frq[i] > 1 - maf) && (nmlst += 1)
                     push!(fixed, i)
@@ -223,8 +231,29 @@ function idealPop(xy, grt, lmp; maf = 0.2)
         push!(nn, nlost)    # number of negative loci lost
         push!(nmp, pmlst)   # number of positive loci lost of maf
         push!(nmn, nmlst)   # number of negative loci lost of maf
+
+        cgt = view(gt, lmp.chip, hgrt .== ig) # chip snps
+        for i in 1:nchip
+            c = sum(cgt[i, :])
+            if (c == 0 || c == ic)
+                push!(cfix, i)
+                (pc[i] < maf || pc[i] > 1 - maf) && push!(cmfx, i)
+            end
+        end
+        push!(clst, length(cfix))
+        push!(cmls, length(cmfx))
+        rgt = view(gt, lmp.ref, hgrt .== ig) # reference snps
+        for i in 1:nref
+            r = sum(rgt[i, :])
+            if r == 0 || r == ic
+                push!(rlst, i)
+                (pr[i] < maf || pr[i] > 1 - maf) && push!(rmfx, i)
+            end
+        end
+        push!(rlst, length(rfix))
+        push!(rmls, length(rmfx))
     end
-    ideal, va, np, nn, nmp, nmn
+    ideal, va, np, nn, nmp, nmn, clst, rlst, cmls, rmls
 end
 
 """
