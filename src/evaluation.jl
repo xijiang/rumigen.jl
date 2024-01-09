@@ -156,7 +156,13 @@ calculate the maximum level of an ideal population.
 Add QTL change for allele frequencies in (0, maf = 0.2). 2023-07-17.
 
 Ideal needs to be doubled, as the maximum genotype is 2. will modify this later.
-2023-10-22, or remember to double the ideal value in summary
+2023-10-22, or remember to double the ideal value in summary.
+
+There was an error about the definition of positive and negative alleles.
+When effect is positive then allele 1 is positive. When effect is negative
+then allele 0 is positive. This version will also count the number of loci that
+fixed on 'good' alleles. This is to compare the effects of migration and selection.
+2024-01-09.
 """
 function idealPop(xy, grt, lmp; maf = 0.2)
     # requirement check
@@ -191,10 +197,18 @@ function idealPop(xy, grt, lmp; maf = 0.2)
                     plost += 1
                     (frq[i] < maf || frq[i] > 1 - maf) && (pmlst += 1)
                     push!(fixed, i)
+                elseif all(iqg[i, :] .== 2)
+                    nlost += 1
+                    (frq[i] < maf || frq[i] > 1 - maf) && (nmlst += 1)
+                    push!(fixed, i)
                 end
             else
                 if all(iqg[i, :] .== 2)
                     best += v
+                    plost += 1
+                    (frq[i] < maf || frq[i] > 1 - maf) && (pmlst += 1)
+                    push!(fixed, i)
+                elseif all(iqg[i, :] .== 0)
                     nlost += 1
                     (frq[i] < maf || frq[i] > 1 - maf) && (nmlst += 1)
                     push!(fixed, i)

@@ -1,4 +1,7 @@
+module XY
+
 abstract type Variation end
+
 struct SNP <: Variation
     a::Int8
 end
@@ -161,13 +164,13 @@ function writexy(file, mat::AbstractMatrix; mattp='F', major=0)
     nothing
 end
 
-function samplexy(xy::AbstractString, loci, ids)
-    isfile(xy) || error("File $xy doesn't exist")
-    hdr = readhdr(xy)
+function samplexy(XY:AbstractString, loci, ids)
+    isfile(XY) || error("File $XY doesn't exist")
+    hdr = readhdr(XY)
     mt, et, mj, ir, ic = xyhdr(hdr)
     (mt == 'F' && et == Int8) || error("Only support F matrix of Int8")
     (mj == 0 && length(loci) ≤ ir && length(ids) ≤ ic ÷ 2) || error("Too many loci or IDs")
-    hap = Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
+    hap = Mmap.mmap(XY, Matrix{et}, (ir, ic), 24)
     hap[loci, 2ids .- 1]
 end
 
@@ -229,7 +232,7 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
     iseven(nhp) || error("Number of haplotypes $nhp must be even")
     dir == "" && (dir = dirname(ixy))
     bar = randstring(6)
-    oxy, omp = joinpath.(dir, bar .* ["-fdr.xy", "-map.ser"])
+    oxy, omp = joinpath.(dir, bar .* ["-fdr.XY", "-map.ser"])
 
     # Parameter check
     ihdr = readhdr(ixy)
@@ -301,7 +304,7 @@ function uniqSNP(ixy::AbstractString; LociMajored = true, inc = 2)
     ihdr = readhdr(ixy)
     mt, et, mj, ir, ic = xyhdr(ihdr)
     (mt ≠ 'F' || et ≠ Int8) && error("Only support F matrix of Int8")
-    oxy = joinpath(dir, bar * "-uhp.xy")
+    oxy = joinpath(dir, bar * "-uhp.XY")
     ei = findfirst(x -> x == UInt16, vldtypes) # to store unique codes for SNP alleles
     cc = LociMajored ? 0 : 1
     or, oc = (mj == cc) ? (ir, ic) : (ic, ir)
@@ -348,7 +351,7 @@ end
 """
     function xy2gp(ixy::AbstractString, ids, loc, σₑ)
 Generate TBV and phenotypes of `ids` in `ixy`, with loci info and σₑ.
-- `ixy` is the filename of xy format of haplotypes, loci majored,
+- `ixy` is the filename of XY format of haplotypes, loci majored,
 - `ids` specifies the ID to be phenotyped,
 - `loc` is a DataFrame, specifies the QTL, markers and their effects,
 - `σₑ` specify the residual standard error.
@@ -357,19 +360,19 @@ function xy2gp(ixy::AbstractString, ids, loc, σₑ)
     isfile(ixy) || error("File $ixy doesn't exist")
     ihdr = readhdr(ixy)
     _, et, mj, ir, ic = xyhdr(ihdr)
-    mj == 0 || error("Only support loci majored xy format")
+    mj == 0 || error("Only support loci majored XY format")
     nlc, nid = size(loc, 1), length(ids)
     (nlc ≤ ir && nid ≤ ic ÷ 2) || error("Too many loci or IDs")
     hap = Mmap.mmap(ixy, Matrix{et}, (ir, ic), 24)
     uhp2gp(hap, loc, σₑ)
 end
 
-function appendxy!(xy::AbstractString, mat::AbstractArray)
-    hdr = readhdr(xy)
+function appendxy!(XY::AbstractString, mat::AbstractArray)
+    hdr = readhdr(XY)
     mt, et, _, ir, ic = xyhdr(hdr)
     jr, jc = size(mat)
     (mt == 'F' && et == eltype(mat) && ir == jr) || error("Incompatible matrix")
-    open(xy, "a+") do io
+    open(XY, "a+") do io
         write(io, mat)
         seek(io, 16)
         write(io, [ic + jc])
@@ -377,13 +380,13 @@ function appendxy!(xy::AbstractString, mat::AbstractArray)
 end
 
 """
-    function xymap(xy::AbstractString)
-Map the entire matrix in `xy` and return the Matrix.
+    function xymap(XY::AbstractString)
+Map the entire matrix in `XY` and return the Matrix.
 """
-function xymap(xy::AbstractString)
-    mt, et, mj, ir, ic = xyhdr(readhdr(xy))
+function xymap(XY::AbstractString)
+    mt, et, mj, ir, ic = xyhdr(readhdr(XY))
     mt == 'F' || error("Only support F matrix")
-    Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)
+    Mmap.mmap(XY, Matrix{et}, (ir, ic), 24)
 end
 
 """
@@ -401,22 +404,22 @@ function _mIBD(a::T, b::T, c::T, d::T) where T<:AbstractVector
 end
 
 """
-    function gametemat(xy::AbstractString, loc, ids)
-Mean gamete matrix (mgm) uss the IBD info stored in the `xy` file to generate a
+    function gametemat(XY::AbstractString, loc, ids)
+Mean gamete matrix (mgm) uss the IBD info stored in the `XY` file to generate a
 gamete matrix. It them average the 4 cells to calculate the relationships
 between ID based on IBD information. In reality, these IBD information can be
 obtained from dense genotypes very accurately.
 
-- `xy` is the filename of xy format of haplotypes, loci majored,
+- `XY` is the filename of XY format of haplotypes, loci majored,
 - `loc` is a Bool vector, specifies which loci to be used,
 - `ids` specifies the ID whose gamete matrix is to be generated.
 """
-function gametemat(xy::AbstractString,
+function gametemat(XY::AbstractString,
     loc::AbstractVector{Bool},
     ids::AbstractVector{Int},
     )
     issorted(ids) || sort!(ids)
-    mat, nid = xymap(xy), length(ids)
+    mat, nid = xymap(XY), length(ids)
     (length(loc) ≠ size(mat, 1) || 2ids[end] > size(mat, 2)) && error("Not number of loci or IDs")
     ihp = sort([2ids .- 1; 2ids])
     gt = copy(mat[loc, ihp])
@@ -441,20 +444,20 @@ function gametemat(xy::AbstractString,
 end
 
 """
-    function gametemat(xy::AbstractString, loc, ids, jds)
+    function gametemat(XY::AbstractString, loc, ids, jds)
 Calculate mean IBD relationships between `ids` and `jds` using the IBD
-information stored in the `xy` file. It them average the 4 cells to calculate
+information stored in the `XY` file. It them average the 4 cells to calculate
 the relationships between ID based on IBD information. In reality, these IBD
 information can be obtained from dense genotypes very accurately.
 """
-function gametemat(xy::AbstractString, # uniquely coded genotypes
+function gametemat(XY::AbstractString, # uniquely coded genotypes
     loc::AbstractVector{Bool}, # specify which loci to be used
     ids::AbstractVector{Int}, # specify which IDs to be used
     jds::AbstractVector{Int}, # specify which IDs to be used
     )
     issorted(ids) || sort!(ids)
     issorted(jds) || sort!(jds)
-    mat, mid, nid = xymap(xy), length(ids), length(jds)
+    mat, mid, nid = xymap(XY), length(ids), length(jds)
     (length(loc) ≠ size(mat, 1) || 
      2ids[end] > size(mat, 2) ||
      2jds[end] > size(mat, 2)) && error("Not number of loci or IDs")
@@ -495,4 +498,6 @@ function _vcfstr2allele(str, loc, sep)
         loc[2id]   = parse(Int8, gt[3])
     end
     parse(Int8, v[1]), parse(Int32, v[2]), sum(loc) / 2id
+end
+
 end

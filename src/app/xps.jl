@@ -8,3 +8,4 @@ include("2c6dee.jl") # echo Selection by optimum contribution | md5sum
 include("75aee9.jl") # echo EBV with IBD matrix | md5sum
 include("32bd64.jl") # echo Examine variance surge for big Ne | md5sum
 include("sandbox.jl")
+include("f9d5ff.jl") # echo Simulation with CAU chicken data. Genotype only. | md5sum
