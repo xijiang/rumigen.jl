@@ -148,6 +148,50 @@ function uhp2gp(hp, loc, σₑ)
     return tbv, pht
 end
 
+function qtl_fixed(qhp, hgrt, efct, maf)
+    i₀ = findall(hgrt .== 0)  # indices of the starting generation
+    frq = mean(qhp[:, i₀], dims = 2)
+    lmf = frq .< maf .|| frq .> 1 - maf # low maf loci
+    best, nhp = sum(efct[efct .> 0]), size(qhp, 2)
+    ideal, va, np, nn, nmp, nmn = Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]
+
+    for ig in sort(unique(hgrt)) # !!! below can be vectorized !!!
+        ihp = view(qhp, :, hgrt .== ig) # QTL haplotypes of the ith generation
+        ss = sum(ihp, dims = 2) # sum of haplotypes
+        plf = (ss .== 0   .&& efct .> 0)
+        prf = (ss .== nhp .&& efct .< 0)
+        nlf = (ss .== 0   .&& efct .< 0)
+        nrf = (ss .== nhp .&& efct .> 0)
+        plost = sum(plf) + sum(prf)
+        nlost = sum(nlf) + sum(nrf)
+        pmlst = sum(plf .&& lmf) + sum(prf .&& lmf)
+        nmlst = sum(nlf .&& lmf) + sum(nrf .&& lmf)
+        down = efct'plf - efct'prf
+        push!(ideal, best - down[1])
+        q = mean(ihp, dims = 2)
+        vv = (2q .* (1 .- q))' * (efct .* efct)
+        push!(va, vv[1])
+        push!(np, plost)    # number of positive loci lost
+        push!(nn, nlost)    # number of negative loci lost
+        push!(nmp, pmlst)   # number of positive loci lost of maf
+        push!(nmn, nmlst)   # number of negative loci lost of maf
+    end
+    ideal, va, np, nn, nmp, nmn
+end
+
+function snp_fixed(gt, hgrt, maf)
+    i₀ = findall(hgrt .== 0)  # indices of the starting generation
+    frq = mean(gt[:, i₀], dims = 2)
+    tlst, mlst, nhp = Float64[], Float64[], size(gt, 2)
+
+    for ig in sort(unique(hgrt))
+        fx = sum(view(gt, :, hgrt .== ig), dims = 2)
+        push!(tlst, sum(fx .== 0) + sum(fx .== nhp))
+        push!(mlst, sum((fx .== 0 .|| fx .== nhp) .&& ((frq .< maf .|| frq .> 1 - maf))))
+    end
+    tlst, mlst
+end
+
 """
     function idealPop(xy, grt, lmp; maf = 0.2)
 Given a genotype file `xy`, generation info `grt` and a linkage map `lmp`,
@@ -178,81 +222,10 @@ function idealPop(xy, grt, lmp; maf = 0.2)
     else
         Int8.(isodd.(Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)))
     end
-    pc = mean(view(gt, lmp.chip, hgrt .== 0), dims = 2)
-    nchip = sum(lmp.chip)
-    pr = mean(view(gt, lmp.ref, hgrt .== 0), dims = 2)
-    nref = sum(lmp.ref)
-    qg = gt[lmp.qtl, 1:2:end] + gt[lmp.qtl, 2:2:end]
-    i₀ = findall(grt .== 0)  # indices of the starting generation
-    frq = mean(qg[:, i₀], dims = 2) / 2.
-    efct = lmp.efct[lmp.qtl]
-    best = sum(efct[efct .> 0])
-    # also use float for qtl fixation counting for ease of retrieval
-    ideal, va, np, nn, fixed = Float64[], Float64[], Float64[], Float64[], Set{Int64}()
-    nmp, nmn = Float64[], Float64[]
-    clst, rlst, cfix, rfix = Float64[], Float64[], Set{Int64}(), Set{Int64}()
-    cmls, rmls, cmfx, rmfx = Float64[], Float64[], Set{Int64}(), Set{Int64}()
-    for ig in sort(unique(grt))
-        iqg = view(qg, :, grt .== ig) # QTL genotypes of the ith generation
-        plost, nlost = 0, 0  # positive and negative QTL lost
-        pmlst, nmlst = 0, 0  # positive and negative QTL lost of maf
-        for (i, v) in enumerate(efct)
-            i ∈ fixed && continue
-            sqg = sum(iqg[i, :])
-            if v > 0
-                if sqg == 0
-                    best -= v
-                    plost += 1
-                    (frq[i] < maf || frq[i] > 1 - maf) && (pmlst += 1)
-                    push!(fixed, i)
-                elseif sqg == ic
-                    nlost += 1
-                    (frq[i] < maf || frq[i] > 1 - maf) && (nmlst += 1)
-                    push!(fixed, i)
-                end
-            else
-                if sqg == ic
-                    best += v
-                    plost += 1
-                    (frq[i] < maf || frq[i] > 1 - maf) && (pmlst += 1)
-                    push!(fixed, i)
-                elseif sqg == 0
-                    nlost += 1
-                    (frq[i] < maf || frq[i] > 1 - maf) && (nmlst += 1)
-                    push!(fixed, i)
-                end
-            end
-        end
-        p = mean(iqg, dims=2) ./ 2
-        vv = (2p .* (1 .- p))' * (efct .* efct)
-        push!(ideal, best)
-        push!(va, vv[1])
-        push!(np, plost)    # number of positive loci lost
-        push!(nn, nlost)    # number of negative loci lost
-        push!(nmp, pmlst)   # number of positive loci lost of maf
-        push!(nmn, nmlst)   # number of negative loci lost of maf
-
-        cgt = view(gt, lmp.chip, hgrt .== ig) # chip snps
-        for i in 1:nchip
-            c = sum(cgt[i, :])
-            if (c == 0 || c == ic)
-                push!(cfix, i)
-                (pc[i] < maf || pc[i] > 1 - maf) && push!(cmfx, i)
-            end
-        end
-        push!(clst, length(cfix))
-        push!(cmls, length(cmfx))
-        rgt = view(gt, lmp.ref, hgrt .== ig) # reference snps
-        for i in 1:nref
-            r = sum(rgt[i, :])
-            if r == 0 || r == ic
-                push!(rlst, i)
-                (pr[i] < maf || pr[i] > 1 - maf) && push!(rmfx, i)
-            end
-        end
-        push!(rlst, length(rfix))
-        push!(rmls, length(rmfx))
-    end
+    ideal, va, np, nn, nmp, nmn = 
+        qtl_fixed(view(gt, lmp.qtl, :), hgrt, lmp.efct[lmp.qtl], maf)
+    clst, cmls = snp_fixed(view(gt, lmp.chip, :), hgrt, maf)
+    rlst, rmls = snp_fixed(view(gt, lmp.ref,  :), hgrt, maf)
     ideal, va, np, nn, nmp, nmn, clst, rlst, cmls, rmls
 end
 

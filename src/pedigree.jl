@@ -363,3 +363,29 @@ function fastF(ped; nlc = 1000, ϵ = 1e-3, inc = 10)
         vf = (sum(sf) - nid * mean(mf)^2) / (nid - 1)
     end
 end
+
+"""
+    function randped(nsir, ndam, ngrt)
+Generate a random pedigree with `nsir` sires, `ndam` dams in each generation,
+and `ngrt` generations.
+Randomly sample `nsir` sires and `ndam` dams from the previous generation.
+This is equavalent to `function randomMate(ped::DataFrame, noff)` in `mate.jl`.
+"""
+function randped(nsir::T, ndam::T, ngrt::T) where T <: Int64
+    nid = nsir + ndam
+    ## generation 0
+    ped = DataFrame(pa = 0,
+                    ma = 0,
+                    sex = shuffle([ones(Int, nsir); zeros(Int, ndam)]),
+                    grt = 0,)
+    for igrt in 1:ngrt
+        pp = @view ped[ped.grt .== igrt - 1, :]
+        append!(ped, DataFrame(
+            pa = rand(findall(x -> x == 1, pp.sex), nid) .+ (igrt-1)*nid,
+            ma = rand(findall(x -> x == 0, pp.sex), nid) .+ (igrt-1)*nid,
+            sex = shuffle([ones(Int, nsir); zeros(Int, ndam)]),
+            grt = igrt,
+        ))
+    end
+    sort!(ped, [:pa])
+end
