@@ -7,6 +7,7 @@ using Glob
 using LinearAlgebra
 using Mmap
 using Octavian
+using Printf
 using Random
 using Serialization
 using SparseArrays
@@ -29,5 +30,5 @@ include("vcf.jl")
 include("xymat.jl")
 
 Relation = Dict{Tuple{Int, Int}, Float64}
-
+Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
 end # module rumigen

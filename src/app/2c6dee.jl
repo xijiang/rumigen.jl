@@ -71,7 +71,7 @@ function xps_2c6dee(;
 
         @info "Summarizing repeat $irpt of $nrpt"
         sum_2c6dee(dir, bar, lmp)
-        pos_qtl_frq(dir, bar, ["sgs", "spd", "oeg", "oag", "ogg", "oap"], ppsz)
+        #pos_qtl_frq(dir, bar, ["sgs", "spd", "oeg", "oag", "ogg", "oap"], ppsz)
         keep || rm.(glob("$dir/$bar-*"))
     end
 end

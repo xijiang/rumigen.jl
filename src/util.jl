@@ -221,12 +221,12 @@ function sumPed(rst, xps, bar, lmp, sel)
             va,      # 14
             plst,    # 15. n. of positive qtl fixed
             nlst,    # 16. n. of negative qtl fixed
-            pmls,    # 17. no. of positive qtl fixed of maf 0.2
-            nmls,    # 18. no. of negative qtl fixed of maf 0.2
-            clst,    # 19. no. of chip snps fixed
-            rlst,    # 20. no. of reference snps fixed
-            cmls,    # 21. no. of chip snps fixed of maf 0.2
-            rmls,    # 22. no. of reference snps fixed of maf 0.2
+            pmls,    # 17. noff. of positive qtl fixed of maf 0.2
+            nmls,    # 18. noff. of negative qtl fixed of maf 0.2
+            clst,    # 19. noff. of chip snps fixed
+            rlst,    # 20. noff. of reference snps fixed
+            cmls,    # 21. noff. of chip snps fixed of maf 0.2
+            rmls,    # 22. noff. of reference snps fixed of maf 0.2
             )
     end
 end
@@ -280,4 +280,59 @@ end
 function commas(num::Integer)
     str = string(num)
     return replace(str, r"(?<=[0-9])(?=(?:[0-9]{3})+(?![0-9]))" => ",")
+end
+
+function Ceiling(;
+    nQTL = 1000,
+    nRepeat = 1000,
+    ad = Normal(),         # can be of other distributions
+    qd = Beta(0.75, 0.75), # allele frequency distribution
+)
+    C = 0.0        # Ceiling height
+    for _ in 1:nRepeat
+        a = rand(ad, nQTL) # effects of SNP 1s
+        p = rand(qd, nQTL) # U-shaped allele frequencies
+        σ = sqrt(sum(2p .* (1 .- p) .* a .^ 2)) # genic std
+        C += 2sum(a[a.>0.0]) / σ
+    end
+    C /= nRepeat
+end
+
+function nfix(frq, F, maf)
+    n = 0.
+    for q in frq
+        q < maf && (n += exp(-2q / F))
+    end
+    Int(floor(n))d
+end
+
+function empfix(
+    q::Float64, # allele frequency of 1
+    F::Float64, # inbreeding coefficient
+    nsir::Int,  # number of sires
+    ndam::Int,  # number of dams, ≥ nsir to make it simple
+    noff::Int;  # number of all offspring, ≥ ndam
+    nrpt = 100_000,
+    random = true)
+    (0 ≤ q ≤ 1 && 0 ≤ F ≤ 1 && nsir > 0 && nsir ≤ ndam && noff ≥ ndam
+    ) || throw(ArgumentError("Invalid input"))
+    nf, p, pool = .0, 1 - q, zeros(Int, noff)
+    pg = [p^2 + p*q*F, 2p*q*(1 - F), q^2 + p*q*F]
+    if random
+        pa = sample(1:nsir, noff, replace = true)
+        ma = sample(1:ndam, noff, replace = true)
+    else
+        pa = repeat(1:nsir, inner = Int(ceil(noff/nsir)))[1:noff]
+        ma = repeat(1:ndam, inner = Int(ceil(noff/ndam)))[1:noff]
+    end
+    for _ in 1:nrpt
+        ss = sample([(0, 0), (0, 1), (1, 1)], Weights(pg), nsir)
+        ds = sample([(0, 0), (0, 1), (1, 1)], Weights(pg), ndam)
+        allele = rand(1:2, noff)
+        for i in 1:noff
+            pool[i] = ss[pa[i]][allele[i]] + ds[ma[i]][allele[i]]
+        end
+        (sum(pool) == 0 || sum(pool) == 2noff) && (nf += 1)
+    end
+    nf / nrpt
 end
