@@ -136,9 +136,3 @@ function randPed(nid, ng)
     end
     ped
 end
-
-function expfix(q::Float64, F::Float64, nsir::Int, ndam::Int, nsib::Int; nrpt = 1000)
-    nid = max(nsir, ndam) * nsib
-    for _ in 1:nrpt
-    end
-end

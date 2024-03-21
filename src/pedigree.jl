@@ -253,6 +253,19 @@ function grm(xy::AbstractString, chip)
     grm(gt) + 0.01I
 end
 
+function grm(xy::AbstractString, chip, ihs)
+    hdr = readhdr(xy)
+    mt, et, mj, ir, ic = xyhdr(hdr)
+    mt == 'F' || error("File $xy is not a genotype file")
+    (et == Int8 || et == UInt16) || error("File $xy is not a valid genotype file")
+    hps = (mj == 0) ? Mmap.mmap(xy, Matrix{et}, (ir, ic), 24) :
+        Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)'
+    snps = view(hps, chip, ihs)
+    gt = (et == Int8) ? snps[:, 1:2:end] + snps[:, 2:2:end] :
+        Int8.(isodd.(snps[:, 1:2:end])) + Int8.(isodd.(snps[:, 2:2:end]))
+    grm(gt) + 0.001I
+end
+
 """
     function A⁻¹(ped, ser)
 If `ped` is an expanded pedigree. The `A⁻¹` of `ped`'s previous version was

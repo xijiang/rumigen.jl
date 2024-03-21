@@ -36,7 +36,7 @@ function xps_75aee9( ;
         pres=pres, dist=dist, sim=sim, quick_test=quick_test))
     # use Dict(pairs(par)) to reconstruct the par dict, remember to include Distributions
     scheme_1 = ("ran", "spd", "sgs", "sis", "sms")
-    scheme_ocs = ("oap", "oag", "ogg", "oig", "oii")
+    scheme_ocs = ("oap", "oag", "ogg", "oig", "oii", "otg")
 
     # The working parts
     @info "Simulation begins"
@@ -65,7 +65,7 @@ function xps_75aee9( ;
             sumPed(rst, sim, bar, lmp, sel)
             pos_qtl_frq(rst, sim, bar, sel, ppsz)
         end
-        for op in 1:5
+        for op in 1:6
             pop, sel = copy(ped), scheme_ocs[op]
             cp("$dir/$bar-uhp.xy", "$dir/$bar-$sel.xy", force=true)
             optSelection("$dir/$bar-$sel.xy", pop, lmp, ngrt, σₑ, ΔF, op=op, k₀=0.027)
@@ -77,6 +77,7 @@ function xps_75aee9( ;
 end
 
 ## echo Check random mating and delta F | md5sum -> 49decb5a5aa5bb7bdf7761b54e3fd2aa
+## Modified on 2024-03-02. This function uses only the preselection part.
 function xps_49decb(;
     nlc = 50_000,
     nqtl = 10_000,
@@ -88,13 +89,12 @@ function xps_49decb(;
     σₐ = 1.0,
     nsir = 25,
     ndam = 50,
-    pres = 5,
-    ngrt = 20,
+    pres = 25,
     dist = Normal(),
     sim = "49decb",
     quick_test=true,
     keep = false
-)
+    )
     dir = "$rst/$sim"
     σₑ = sqrt((1 - h²) / h²) * σₐ
     isdir(dir) && rm(dir, recursive=true, force=true)
@@ -103,24 +103,23 @@ function xps_49decb(;
     ppsz = ppsz ÷ max(nsir, ndam) * max(nsir, ndam)
     serialize("$dir/par.ser", (nlc=nlc, nqtl=nqtl, nref=nref,
         nrpt=nrpt, rst=rst, ppsz=ppsz, h²=h², σₐ=σₐ, nsir=nsir, ndam=ndam,
-        pres=pres, ngrt=ngrt, dist=dist, sim=sim, quick_test=quick_test))
+        pres=pres, dist=dist, sim=sim, quick_test=quick_test))
     # The working parts
     @info "Simulation begins"
     for irpt in 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
         fdr, foo = prepFdr(rst, quick_test, ppsz)
-
+        
         # random selectio for a few generations
         bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
         lmp = deserialize("$dir/$bar-map.ser") # each sample has its own map
         ped = initPedigree("$dir/$bar-uhp.xy", lmp, σₑ, fg=-pres)
         simpleSelection("$dir/$bar-uhp.xy", ped, lmp, nsir, ndam, pres, σₑ, 1)
-        pop, sel = copy(ped), "ran"
-        cp("$dir/$bar-uhp.xy", "$dir/$bar-$sel.xy", force=true)
-        simpleSelection("$dir/$bar-$sel.xy", pop, lmp, nsir, ndam, ngrt, σₑ, 1, mp=false)
-        sumPed(rst, sim, bar, lmp, sel)
-        pos_qtl_frq(rst, sim, bar, sel, ppsz)
+        ped.grt .+= 20
+        serialize("$dir/$bar-uhp+ped.ser", ped)
+        sumPed(rst, sim, bar, lmp, "uhp")
+        pos_qtl_frq(rst, sim, bar, "uhp", ppsz)
         keep || rm.(glob("$dir/$bar-*"), force=true)
     end
 end

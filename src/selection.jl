@@ -209,7 +209,8 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
                2 => "AGBLUP",
                3 => "GGBLUP",
                4 => "IGBLUP",
-               5 => "IIBLUP")
+               5 => "IIBLUP",
+               6 => "GtGBLUP",)
     
     @info "$(sel[op]) selection on $(basename(xy)), for $ngrt generations"
     for igrt ∈ 1:ngrt
@@ -232,10 +233,11 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
             A = Amat(ped)
             A₂₂ = copy(A[pool, pool])
             A = nothing
-        elseif op == 3 # GGBLUP
+        elseif op == 3 # GGBLUP, and GtGBLUP
             G = grm(xy, lmp.chip)
             giv = inv(G)
             A₂₂ = copy(G[pool, pool])
+            #A₂₂ = grm(xy,lmp.chip, sort([2pool; 2pool .- 1]))
             G = nothing
         elseif op == 4 # IGBLUP
             G = grm(xy, lmp.chip)
@@ -248,13 +250,22 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
             giv = inv(G)
             A₂₂ = copy(G[pool, pool])
             G = nothing
+        elseif op == 6 # GtGBLUP
+            G = grm(xy, lmp.chip)
+            giv = inv(G)
+            A₂₂ = grm(xy, lmp.chip, sort([2pool; 2pool .- 1]))
+            G = nothing
         else
             error("op = $op not supported")
         end
 
         animalModel(ped, giv, h²) # default using :grt as fixed effect
         ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
-        K = 2(1 - (1 - k₀) * (1 - dF) ^ (igrt+1))
+        if op == 6
+            K = 2dF
+        else
+            K = 2(1 - (1 - k₀) * (1 - dF) ^ (igrt+1))
+        end
         c = myopt(DataFrame(ebv=ped.ebv[pool], sex=ped.sex[pool]), A₂₂, K, silent=true)
         pm = randomMate(DataFrame(sex=ped.sex[pool], c=c), nid) .+ (size(ped, 1) - nid)
         drop(agt, ogt, pm, lms)

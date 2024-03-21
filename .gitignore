@@ -29,3 +29,6 @@ slim/GCF_002263795.2_ARS-UCD1.3_genomic.fna
 slim/*.jl
 meetings/
 docs/figures
+docs/.ipynb_checkpoints/
+src/.ipynb_checkpoints/
+src/app/.ipynb_checkpoints/

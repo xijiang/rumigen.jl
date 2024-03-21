@@ -137,6 +137,16 @@ function pos_qtl_frq(rst, xps, bar, sel, ppsz)
         end
         binapp!("$rst/$xps/frf.bin", cnt) # frequency of frequency of reference
     end
+    ref = nothing
+    chp = isodd.(snp[lmp.chip, :])
+    for i in 1:nhp:size(chp, 2)
+        frq = sum(chp[:, i:i+nhp-1], dims=2)
+        cnt = zeros(Int, nhp + 1)
+        for x in frq
+            cnt[x+1] += 1
+        end
+        binapp!("$rst/$xps/fcf.bin", cnt) # frequency of frequency of chip
+    end
 end
 
 """
@@ -202,7 +212,7 @@ function sumPed(rst, xps, bar, lmp, sel)
         ncm  = sum(grt.c[dams] .> 0)
         push!(smp, (mbv, vbv, mF, mFr, mFp, bcr, scr, dcr, np, nm, ncp, ncm))
     end
-    ideal, va, plst, nlst, pmls, nmls, clst, rlst, cmls, rmls = idealPop("$rst/$xps/$bar-$sel.xy", ped.grt, lmp)
+    ips = idealPop("$rst/$xps/$bar-$sel.xy", ped.grt, lmp)
     open("$rst/$xps/$xps.bin", "a") do io
         write(io,
             smp.mbv, # 1
@@ -217,16 +227,19 @@ function sumPed(rst, xps, bar, lmp, sel)
             smp.nm,  # 10
             smp.ncp, # 11
             smp.ncm, # 12
-            ideal,   # 13
-            va,      # 14
-            plst,    # 15. n. of positive qtl fixed
-            nlst,    # 16. n. of negative qtl fixed
-            pmls,    # 17. noff. of positive qtl fixed of maf 0.2
-            nmls,    # 18. noff. of negative qtl fixed of maf 0.2
-            clst,    # 19. noff. of chip snps fixed
-            rlst,    # 20. noff. of reference snps fixed
-            cmls,    # 21. noff. of chip snps fixed of maf 0.2
-            rmls,    # 22. noff. of reference snps fixed of maf 0.2
+            ips.ideal,   # 13
+            ips.va,      # 14
+            ips.np,    # 15. n. of positive qtl fixed
+            ips.nn,    # 16. n. of negative qtl fixed
+            ips.nmp,    # 17. noff. of positive qtl fixed of maf 0.2
+            ips.nmn,    # 18. noff. of negative qtl fixed of maf 0.2
+            ips.clst,    # 19. noff. of chip snps fixed
+            ips.rlst,    # 20. noff. of reference snps fixed
+            ips.cmls,    # 21. noff. of chip snps fixed of maf 0.2
+            ips.rmls,    # 22. noff. of reference snps fixed of maf 0.2
+            ips.cvr,     # 23. covariance begween generation 0 and 20, reference
+            ips.cvc,     # 24. covariance begween generation 0 and 20, chip
+            ips.cvq,     # 25. covariance begween generation 0 and 20, qtl
             )
     end
 end
@@ -306,33 +319,30 @@ function nfix(frq, F, maf)
     Int(floor(n))d
 end
 
-function empfix(
-    q::Float64, # allele frequency of 1
-    F::Float64, # inbreeding coefficient
-    nsir::Int,  # number of sires
-    ndam::Int,  # number of dams, ≥ nsir to make it simple
-    noff::Int;  # number of all offspring, ≥ ndam
-    nrpt = 100_000,
-    random = true)
-    (0 ≤ q ≤ 1 && 0 ≤ F ≤ 1 && nsir > 0 && nsir ≤ ndam && noff ≥ ndam
-    ) || throw(ArgumentError("Invalid input"))
-    nf, p, pool = .0, 1 - q, zeros(Int, noff)
-    pg = [p^2 + p*q*F, 2p*q*(1 - F), q^2 + p*q*F]
-    if random
-        pa = sample(1:nsir, noff, replace = true)
-        ma = sample(1:ndam, noff, replace = true)
-    else
-        pa = repeat(1:nsir, inner = Int(ceil(noff/nsir)))[1:noff]
-        ma = repeat(1:ndam, inner = Int(ceil(noff/ndam)))[1:noff]
+"""
+    function grtfrq(xy, grt)
+Given a `xy` file and a vector `grt` showing haplotype generations, this
+function counts the allele frequency of each locus in each generation. The
+allele frequency is calculated from the `xy` file. The function returns a matrix
+of `nlc x ngrt` matrix.
+
+Note: This is a quick and dirty one. As I know the eltype of `xy` is `Int32`.
+This will be changed in the future.
+"""
+function grtfrq(xy, grt)
+    dims = begin
+        tmp = zeros(Int, 3)
+        read!(xy, tmp)
+        (tmp[2], tmp[3])
     end
-    for _ in 1:nrpt
-        ss = sample([(0, 0), (0, 1), (1, 1)], Weights(pg), nsir)
-        ds = sample([(0, 0), (0, 1), (1, 1)], Weights(pg), ndam)
-        allele = rand(1:2, noff)
-        for i in 1:noff
-            pool[i] = ss[pa[i]][allele[i]] + ds[ma[i]][allele[i]]
-        end
-        (sum(pool) == 0 || sum(pool) == 2noff) && (nf += 1)
+    gs = unique(grt)
+    ng = length(gs)
+    frq = Int[]
+    gt = Mmap.mmap(xy, Matrix{Int16}, dims, 24)
+    for g in gs
+        cg = grt .== g
+        cgt = isodd.(gt[:, cg])
+        append!(frq, sum(cgt, dims=2))
     end
-    nf / nrpt
+    reshape(frq, dims[1], ng)
 end

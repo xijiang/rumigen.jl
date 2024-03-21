@@ -1,0 +1,332 @@
+\documentclass{beamer}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{bookmark}
+\usepackage{wasysym}
+\usefonttheme{professionalfonts,serif}
+\renewcommand{\baselinestretch}{1.25}
+\usetheme{Warsaw}
+
+\AtBeginSection[]
+               {
+                 \begin{frame}
+                   \frametitle{Contents}  %\insertsection to display section title                                                                             
+                   \tableofcontents[currentsection,hideothersubsections]
+                 \end{frame}
+               }
+\setbeamercovered{invisible}
+
+\begin{document}
+
+\title[Using A, G, I for genomic prediction \& management]{Using Alternative Relationship Matrices for Genomic Prediction and Managing Genetic Diversity}
+\author[Xijiang Yu, PB \& TM]{Xijiang Yu, Peer Berg and Theo Meuwissen}
+\date{Feb. 28, 2024}
+\institute{IHA, NMBU, \AA s, Norway}
+\titlegraphic{\includegraphics[height=.09\textwidth]{figures/nmbu.jpg}\phantom{gap}\includegraphics[height=.09\textwidth]{figures/rumigen.png}}
+
+\frame{
+  \titlepage
+}
+
+\section{Background}
+\subsection{A dilemma of modern breeding}
+\begin{frame}{A dilemma of modern breeding}
+  \begin{itemize}
+  \item Needs faster genetic gain to feed increasing human demands.
+  \item Must maintain genetic diversity to cope with future challenges, e.g.,
+    \begin{itemize}
+    \item Climate change
+    \item Emerging diseases
+    \item Societal demands
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+% intro rumigen 
+
+\subsection{Management of population genetic structure}
+\begin{frame}{Management of population genetic structure}
+  \begin{itemize}
+  \item Constrain inbreeding with a relationship matrix while selecting for maximal genetic gain
+    \begin{itemize}
+    \item Meuwissen, 1997 %378 citations and counting
+    \end{itemize}
+  \item Before the genomic era:
+    \begin{itemize}
+    \item Pedigree-based relationship matrix $\to$ NRM (Numerator RM)
+    \end{itemize}
+  \item In the genomic era:
+    \begin{itemize}
+    \item Genomic relationship matrix $\to$ e.g., GRM, IRM (IBD RM)
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\subsection{Objectives}
+\begin{frame}{Objectives}
+  \begin{itemize}
+  \item Utilize GRM, IRM (new tools) and NRM (old tool) to investigate
+    \begin{itemize}
+    \item Genetic progress
+    \item Diversity, inbreeding, and future selection potentials
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{Materials and Methods}
+
+\subsection{Simulation}
+\begin{frame}{Simulation}
+  Common base population:
+
+  $$\boxed{\text{MaCS}}\Rightarrow\boxed{\text{25\mars}\times\text{50\female}}\xrightleftharpoons[\text{Random select}]{\text{5 generations}}\boxed{\text{200 offspring}}$$
+
+  non-OCS:
+
+  $$\overset{\text{Select on EBV}}\Longrightarrow\boxed{\text{25\mars}\times\text{50\female}}\xrightleftharpoons[\text{Select on EBV}]{\text{20 generations}}\boxed{\text{200 offspring}}$$
+
+  or OCS,
+
+  $$\overset{\text{Select on EBV}}\Longrightarrow\boxed{\text{\mars s}\times\text{\female s}}\xrightleftharpoons[\text{Select on EBV}]{\text{20 generations}}\boxed{\text{200 offspring}}$$
+\end{frame}
+
+\begin{frame}{Simulation -cont.}
+  \begin{itemize}
+  \item Data to record:
+    \begin{itemize}
+    \item Genotypes
+      \begin{itemize}
+      \item $50k$ chip (visible) SNP
+      \item $10k$ reference (invisible) SNP
+      \item $10k$ QTL
+      \item uniquely coded to trace every allele
+      \end{itemize}
+    \item Pedigree, including phenotypes, TBV, inbreeding.
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Simulation -cont.}
+  \begin{itemize}
+  \item Software
+    \begin{itemize}
+    \item Written in Julia
+    \item Started since the GEAS project
+    \end{itemize}
+  \item Features
+    \begin{itemize}
+    \item Fast, flexible, reusable and of large capacity
+    \item Can deal with complex breeding structure
+    \item Many structured parameter recordings and analysis tools
+    \end{itemize}
+  \item Availability
+    \begin{itemize}
+    \item \href{https://github.com/xijiang/rumigen.jl}{https://github.com/xijiang/rumigen.jl}
+    \item Evolves all the time
+    \item Can be tailored for other uses.
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\subsubsection{Breeding ceiling}
+\begin{frame}{Breeding ceiling}
+  $$\mathbf{a}\sim\text{MVN}(\mathbf{0},\mathbf{I}\sigma_{\text{tiny}}^2)\Longrightarrow\text{Ceiling} = \frac{\sum 2a_i}{\sigma_{\text{TBV}_{t=0}}}\quad\forall a_i>0$$
+
+  \begin{itemize}
+  \item A ceiling lowers when a QTL is fixed on the allele of unfavorite effect
+  \item Can be obtained empirically, e.g.,
+    \begin{itemize}
+    \item $\sim$\phantom{1}46 $\sigma_{\text{TBV}}$ of generation $t=0$ for \phantom{0}1 $k$ QTL
+    \item $\sim$146 $\sigma_{\text{TBV}}$ of generation $t=0$ for 10 $k$ QTL
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\subsection{Models}
+\begin{frame}{Models}
+  \begin{block}{Phenotypes}
+    \begin{itemize}
+    \item $\text{TBV}_i=\mathbf{a'g}_i$
+      \begin{itemize}
+      \item Normalized to mean 0 and variance 1.
+      \end{itemize}
+    \item $\text{phenotypes} = \text{TBV} + \mathbf{e}$
+      \begin{itemize}
+      \item Male phenotypes masked
+      \end{itemize}
+    \item where
+      \begin{itemize}
+      \item $\mathbf{a}\sim\text{MVN}(\mathbf{0},\,\mathbf{I}\sigma_a^2)$
+      \item $\mathbf{e}\sim\text{MVN}(\mathbf{0},\,\mathbf{I}\sigma_a^2\frac{1-h^2}{h^2})$
+      \end{itemize}
+    \end{itemize}
+  \end{block}
+  \begin{block}{BV estimation}
+    \begin{itemize}
+    \item $y_{kj} = \mu+t_k+\text{EBV}_{kj}+e_{kj}$
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\subsection{Selection schemes}
+\begin{frame}{Selection schemes}
+  \begin{block}{Optimum contribution selection (OCS)}
+    $$\begin{matrix}
+      \text{Maximize:} & \mathbf{c}'\text{EBV}\\
+      \text{Subject to:} & \mathbf{c'Xc}/2\le F_{t+1}\\
+      & \mathbf{c's} = 0.5\\
+      & \mathbf{c'd} = 0.5\\
+      & c_i \ge 0
+    \end{matrix}$$
+  \end{block}
+  \begin{block}{Selection schemes}
+    \begin{itemize}
+    \item Non-OCS
+      \begin{itemize}
+      \item A-, G-, I-BLUP and random selection
+      \end{itemize}
+    \item OCS
+      \begin{itemize}
+      \item AA-, AG-, GG-, IG-, and II-BLUP
+      \end{itemize} 
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\section{Results}
+
+\subsection{Genetic improvement}
+\begin{frame}{Selection ceiling and genetic improvement}
+  \includegraphics[width=\textwidth]{figures/figure-1.pdf}
+\end{frame}
+% Notes:
+% 1. GGBLUP has the highest genetic gain, but also the lowest ceiling
+% 2. Pay attention to I constrained OCS schemes. AA is also ok, but no return.
+% 3. OCS schemes always have higher delta G than non-OCS ones
+
+\begin{frame}{Number of parents selected in OCS schemes}
+  \includegraphics[width=\textwidth]{figures/figure-6.pdf}
+\end{frame}
+% Notes:
+% 1. solid line: number of males selected; dashed line: females
+% 2. G as constraint selects much fewer solutions. Partly explains higher delta G and lower ceiling
+% 3. G has more variations, such that it think fewer solutions are enough
+
+\subsection{Genetic diversity}
+\begin{frame}{Accumulated QTL allele losses}
+  \includegraphics[width=\textwidth]{figures/figure-3.pdf}
+\end{frame}
+% Notes:
+% 1. 4 lines in the random scheme
+% 2. AGBLUP has many loci fixed and is as bad as ABLUP, which can be explained later.
+% - codes in NMBU one drive rumigen 2024 jan. 15
+% remove low mafs
+% need redo the random scheme !!!
+
+\begin{frame}{Genetic and genic variances}
+  \includegraphics[width=\textwidth]{figures/figure-4.pdf}
+
+  \tiny{Genetic var. $=\sigma_{\text{TBV}}^2$, genic var. $=\sum_i^{N_{\text{QTL}}}2p_iq_ia_i^2$}
+\end{frame}
+% Notes:
+% 1. Variance reduces in line with the ceiling
+% 2. Ceiling is maybe a better measure for potential
+
+\begin{frame}{Inbreeding increment}
+  \includegraphics[width=\textwidth]{figures/figure-5.pdf}
+\end{frame}
+% Notes:
+% 1. II, and IG reached the target inbreeding level.
+% 2. Pedigree inbreeding calculation has a system bias
+% 3. A inbreeding is not picking up the difference between the sibs
+%    - e.g., for I-, G-BLUP, the IBD inbreeding is higher.
+
+\begin{frame}{QTL allele frequencies}
+  \includegraphics[width=\textwidth]{figures/figure-7.pdf}
+\end{frame}
+% Notes:
+% 1. Fixed loci numbers are excluded
+% 2. The gap between t20 and t0 are the number of QTL fixed
+% 3. AGBLUP has a bad shape, which is prone to future fixation
+% - change line colors and x-, y-axis labels. <--- done
+% - add random scheme.
+% - figure from 2023-10-23
+
+\subsection{$\Delta$TBV costs}
+\begin{frame}{$\Delta$TBV costs}
+  \begin{center}
+    \begin{tabular}{rrrccc}
+      \hline
+      %Scheme & $\Delta\overline{\text{TBV}}$ & $\oveline{\text{Ceiling}}$ & $\Delta\overline{\text{TBV}}/\Delta\text{Ceiling}$(\%) & $\Delta\overline{\text{TBV}}/\Delta\bar{F}$ & $\Delta\overline{\text{Ceiling}}/\Delta\overline{\text{TBV}}$\\
+      Scheme & $\Delta\overline{\text{TBV}}$ & $\overline{\text{Ceiling}}$ & $\frac{\Delta\overline{\text{TBV}}}{\Delta\overline{\text{Ceiling}}}$\% & $\frac{\Delta\overline{\text{TBV}}}{\Delta F}$ & $\frac{\Delta\overline{\text{Ceiling}}}{\Delta\overline{\text{TBV}}}$\\
+      \hline
+       A - &  7.1 &  91.9 & 16.4 & 20.1 & 6.1\\
+       I - &  8.1 &  96.6 & 21.0 & 21.0 & 4.8\\
+      GG - & 14.0 &  72.9 & 22.5 & 27.5 & 4.4\\
+       G - &  8.4 &  97.9 & 22.6 & 25.6 & 4.4\\
+      AG - & 12.4 &  96.5 & 32.2 & 35.6 & 3.1\\
+      AA - & 10.5 & 104.7 & 34.6 & 42.5 & 2.9\\
+      IG - & 11.4 & 105.6 & 38.9 & 52.3 & 2.6\\
+      II - & 11.0 & 107.0 & 39.1 & 50.0 & 2.6\\
+      \hline
+    \end{tabular}
+  \end{center}
+\end{frame}
+
+% \begin{frame}{Empirical probability of loci fixation against MAF and inbreeding}
+%   \includegraphics[width=\textwidth]{figures/pfix.pdf}
+% \end{frame}
+% % function empfix in rumigen.jl -> util.jl, deprecated. a binomial sampling process.
+
+\section{Conclusions}
+\begin{frame}{Conclusions}
+  \begin{itemize}
+  \item The OCS schemes have higher genetic gain than the non-OCS ones
+    \begin{itemize}
+      \item IBD relationships constrained schemes are more ideal for their genetic gain.
+    \end{itemize}
+  \item I- constrained schemes have maintained more diversity.
+    \begin{itemize}
+    \item Higher ceiling
+    \item More genetic, or genic variance
+    \item Less inbreeding increase
+    \item Less allele fixation
+    \item Flatter QTL allele frequency distributions
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+% start with the delta g per ceiling or inbreeding
+
+\begin{frame}{Conclusions -cont.}
+  \begin{itemize}
+    \item Selection without constraints (traditional methods) are not only slow,
+      \begin{itemize}
+        \item but also costly.
+      \end{itemize}
+    \item Results of AA-scheme are also ok.
+      \begin{itemize}
+        \item Lack the advantages of genomic selection
+      \end{itemize}
+    \item GG-scheme found the fewest solutions.
+      \begin{itemize}
+        \item May due of more variable.
+      \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Acknowledgements}
+  \begin{itemize}
+    \item We thank the RUMIGEN project supported by ERC
+    \item XY thanks Dr. Lu Cao for many discussions of these slides
+    \item Inputs from the audience
+  \end{itemize}
+  
+  \vspace{1cm}
+  
+  \begin{center}
+    \includegraphics[height=.15\textwidth]{figures/nmbu.jpg}\phantom{gap}\includegraphics[height=.15\textwidth]{figures/rumigen.png}  
+  \end{center}
+\end{frame}
+
+\end{document}

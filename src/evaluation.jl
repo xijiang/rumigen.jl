@@ -149,6 +149,7 @@ function uhp2gp(hp, loc, σₑ)
 end
 
 function qtl_fixed(qhp, hgrt, efct, maf)
+    #i₀ = findall(hgrt .== minimum(hgrt))  # indices of the starting generation
     i₀ = findall(hgrt .== 0)  # indices of the starting generation
     frq = mean(qhp[:, i₀], dims = 2)
     lmf = frq .< maf .|| frq .> 1 - maf # low maf loci
@@ -176,11 +177,11 @@ function qtl_fixed(qhp, hgrt, efct, maf)
         push!(nmp, pmlst)   # number of positive loci lost of maf
         push!(nmn, nmlst)   # number of negative loci lost of maf
     end
-    ideal, va, np, nn, nmp, nmn
+    2ideal, va, np, nn, nmp, nmn
 end
 
 function snp_fixed(gt, hgrt, maf)
-    i₀ = findall(hgrt .== 0)  # indices of the starting generation
+    i₀ = findall(hgrt .== minimum(hgrt))  # indices of the starting generation
     frq = mean(gt[:, i₀], dims = 2)
     tlst, mlst, nhp = Float64[], Float64[], size(gt, 2)
 
@@ -226,7 +227,36 @@ function idealPop(xy, grt, lmp; maf = 0.2)
         qtl_fixed(view(gt, lmp.qtl, :), hgrt, lmp.efct[lmp.qtl], maf)
     clst, cmls = snp_fixed(view(gt, lmp.chip, :), hgrt, maf)
     rlst, rmls = snp_fixed(view(gt, lmp.ref,  :), hgrt, maf)
-    ideal, va, np, nn, nmp, nmn, clst, rlst, cmls, rmls
+    cvr, cvc, cvq = begin
+        g0 = findall(hgrt .== 0)
+        gn = findall(hgrt .== hgrt[end])
+        q0 = mean(gt[:, g0], dims = 2)
+        qn = mean(gt[:, gn], dims = 2) - q0
+        vld = q0 .≠ 0. .&& q0 .≠ 1.
+        σ = sqrt.(q0 .* (1 .- q0))
+        q0 .-= 0.5
+        q0 ./= σ
+        qn ./= σ
+        ref = lmp.ref .&& vld
+        chp = lmp.chip .&& vld
+        qtl = lmp.qtl .&& vld
+        cov(q0[ref], qn[ref]), cov(q0[chp], qn[chp]), cov(q0[qtl], qn[qtl])
+    end
+    (
+        ideal = ideal,
+        va = va,
+        np = np,
+        nn = nn,
+        nmp = nmp,
+        nmn = nmn,
+        clst = clst,
+        rlst = rlst,
+        cmls = cmls,
+        rmls = rmls,
+        cvr = cvr,
+        cvc = cvc,
+        cvq = cvq,
+    )
 end
 
 """
