@@ -1,5 +1,3 @@
-module XY
-
 abstract type Variation end
 
 struct SNP <: Variation
@@ -247,7 +245,11 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
     lqtl = sort(shuffle(1:tlc)[1:nqtl]) # QTL loci
     slc = sort(shuffle(1:tlc)[1:nlc])   # chip loci
     rlc = sort(shuffle(1:tlc)[1:nref])  # reference loci
-    shp = sort(shuffle(1:thp)[1:nhp])
+    shp = begin # modified 2024-04-04, to sample 2 haps of an ID together
+        nid = nhp ÷ 2
+        sid = sort(shuffle(1:thp÷2)[1:nid])
+        sort([2sid .- 1; 2sid])
+    end
     flc = sort(unique([lqtl; slc; rlc])) # final sampled loci
 
     # sampled linkage map
@@ -498,6 +500,4 @@ function _vcfstr2allele(str, loc, sep)
         loc[2id]   = parse(Int8, gt[3])
     end
     parse(Int8, v[1]), parse(Int32, v[2]), sum(loc) / 2id
-end
-
 end

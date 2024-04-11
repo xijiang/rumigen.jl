@@ -10,3 +10,4 @@ include("32bd64.jl") # echo Examine variance surge for big Ne | md5sum
 include("sandbox.jl")
 include("f9d5ff.jl") # echo Simulation with CAU chicken data. Genotype only. | md5sum
 include("a13c84.jl")
+include("f0e77c.jl") # echo OCS with equal number of parents | md5sum -> f0e77cf92515d3e9318085872b868a93

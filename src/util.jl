@@ -229,14 +229,14 @@ function sumPed(rst, xps, bar, lmp, sel)
             smp.ncm, # 12
             ips.ideal,   # 13
             ips.va,      # 14
-            ips.np,    # 15. n. of positive qtl fixed
-            ips.nn,    # 16. n. of negative qtl fixed
-            ips.nmp,    # 17. noff. of positive qtl fixed of maf 0.2
-            ips.nmn,    # 18. noff. of negative qtl fixed of maf 0.2
-            ips.clst,    # 19. noff. of chip snps fixed
-            ips.rlst,    # 20. noff. of reference snps fixed
-            ips.cmls,    # 21. noff. of chip snps fixed of maf 0.2
-            ips.rmls,    # 22. noff. of reference snps fixed of maf 0.2
+            ips.np,      # 15. no. of positive qtl fixed
+            ips.nn,      # 16. no. of negative qtl fixed
+            ips.nmp,     # 17. no. of positive qtl fixed of maf 0.2
+            ips.nmn,     # 18. no. of negative qtl fixed of maf 0.2
+            ips.clst,    # 19. no. of chip snps fixed
+            ips.rlst,    # 20. no. of reference snps fixed
+            ips.cmls,    # 21. no. of chip snps fixed of maf 0.2
+            ips.rmls,    # 22. no. of reference snps fixed of maf 0.2
             ips.cvr,     # 23. covariance begween generation 0 and 20, reference
             ips.cvc,     # 24. covariance begween generation 0 and 20, chip
             ips.cvq,     # 25. covariance begween generation 0 and 20, qtl

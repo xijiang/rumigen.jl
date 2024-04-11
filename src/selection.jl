@@ -210,7 +210,8 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
                3 => "GGBLUP",
                4 => "IGBLUP",
                5 => "IIBLUP",
-               6 => "GtGBLUP",)
+               6 => "GtGBLUP",
+               7 => "DOSBLUP")
     
     @info "$(sel[op]) selection on $(basename(xy)), for $ngrt generations"
     for igrt ∈ 1:ngrt
@@ -255,22 +256,32 @@ function optSelection(xy, ped, lmp, ngrt, σₑ, dF; op=1, k₀=0.)
             giv = inv(G)
             A₂₂ = grm(xy, lmp.chip, sort([2pool; 2pool .- 1]))
             G = nothing
+        elseif op == 7 # DOSBLUP
+            G = zeros(1:mid, 1:mid)
+            read!("$(xy[1:end-3]).bin", G)
+            giv = inv(G)
+            A₂₂ = copy(G[pool, pool])
+            G = nothing
         else
             error("op = $op not supported")
         end
 
         animalModel(ped, giv, h²) # default using :grt as fixed effect
         ped.ebv[ped.grt .< ped.grt[end]] = oebv # restore previously calculated EBV
-        if op == 6
-            K = 2dF
-        else
-            K = 2(1 - (1 - k₀) * (1 - dF) ^ (igrt+1))
-        end
-        c = myopt(DataFrame(ebv=ped.ebv[pool], sex=ped.sex[pool]), A₂₂, K, silent=true)
+        K = op == 6 ? 2dF : 2(1 - (1 - k₀) * (1 - dF) ^ (igrt + 1))
+        c = op == 7 ? 
+            DOSop(ped.ebv[pool], A₂₂, zeros(200), 1., K, [100, 100], ped.sex[pool] .+ 1) / 2 : 
+            myopt(DataFrame(ebv=ped.ebv[pool], sex=ped.sex[pool]), A₂₂, K, silent=true)
+        # begin debug
+        # write("rst/f0e77c/a22.bin", A₂₂)
+        # write("rst/f0e77c/ebv.bin", ped.ebv[pool])
+        # write("rst/f0e77c/sex.bin", ped.sex[pool] .+ 1)
+        # println(": $(sum(c .> 0)), $K")
+        # end debug
         pm = randomMate(DataFrame(sex=ped.sex[pool], c=c), nid) .+ (size(ped, 1) - nid)
         drop(agt, ogt, pm, lms)
         appendxy!(xy, ogt)
-        op == 5 && igrt ≠ ngrt && updateIBDM(xy, "$(xy[1:end-3]).bin", lmp.chip, mid, nid) 
+        (op == 5 || op == 7) && igrt ≠ ngrt && updateIBDM(xy, "$(xy[1:end-3]).bin", lmp.chip, mid, nid) 
         tbv, pht = uhp2gp(ogt, lmp, σₑ)
         df = DataFrame( id = size(ped, 1) + 1: size(ped, 1) + size(pm, 1),
                         pa = pm[:, 1], ma = pm[:, 2],
