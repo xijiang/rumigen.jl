@@ -137,7 +137,8 @@ function A⁻¹(ped)
 end
 
 """
-    function grm(gt)
+    grm(gt)
+
 Given the genotypes of `Matrix{Int8}`, this function calculate the genomic 
 relationship matrix `GRM`. If the matrix is too big, the content will be 
 calculated block by block and written to a file, else it will return a 

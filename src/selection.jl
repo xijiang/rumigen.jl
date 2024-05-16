@@ -57,6 +57,10 @@ function simpleSelection(xy, ped, lmp, nsir, ndam, ngrt, σₑ, op; mp = true, �
     for igrt in 1:ngrt
         print(" $igrt")
         agt = Mmap.mmap(xy, Matrix{et}, (nr, nc), 24) # ancestors
+
+        # output genotypes for python codes
+        # read the segment RM somewhere.
+
         oebv = ped.ebv[ped.grt.<ped.grt[end]]
         giv, mid = nothing, size(ped, 1)
         if op == 1     # random selection
