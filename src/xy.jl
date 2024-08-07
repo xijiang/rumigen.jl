@@ -10,8 +10,22 @@ struct USNP <: Variation
 end
 
 # the types that might be used in matrices for breeding
-const vldtypes = (Bool, Int8, Int16, Int32, Int64, Int128, UInt8, UInt16,
-    UInt32, UInt64, UInt128, Float16, Float32, Float64)
+const vldtypes = (
+    Bool,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Int128,
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    UInt128,
+    Float16,
+    Float32,
+    Float64,
+)
 
 """
 This struct is designed for long term usage.  The idea magic header
@@ -110,16 +124,16 @@ function readxy(file::AbstractString)
         else
             mat = zeros(et, row, col)
             if mt == 'L' || mt == 'S' # matrix type
-                for i in 1:col
+                for i = 1:col
                     read!(io, view(mat, i:row, i))
                 end
                 if mt == 'S'
-                    for i in 1:col
+                    for i = 1:col
                         copyto!(view(mat, i, i+1:col), view(mat, i+1:row, i)')
                     end
                 end
             elseif mt == 'U'
-                for i in 1:col
+                for i = 1:col
                     read!(io, view(mat, 1:i, i))
                 end
             else
@@ -135,7 +149,7 @@ end
 Write a matrix `mat` into `file`, with specified saving type.  Note a
 symmetric matrix is written of its lower triangle.
 """
-function writexy(file, mat::AbstractMatrix; mattp='F', major=0)
+function writexy(file, mat::AbstractMatrix; mattp = 'F', major = 0)
     mattp ∈ "FLUS" || error("Matrix type $mattp not defined")
     et = findfirst(x -> x == eltype(mat), vldtypes)
     et === nothing && error("Element type $(eltype(mat)) not supported")
@@ -148,11 +162,11 @@ function writexy(file, mat::AbstractMatrix; mattp='F', major=0)
     open(file, "w") do io
         write(io, Ref(hdr))
         if mattp == 'L' || mattp == 'S'
-            for i in 1:ncol
+            for i = 1:ncol
                 write(io, mat[i:nrow, i])
             end
         elseif mattp == 'U'
-            for i in 1:ncol
+            for i = 1:ncol
                 write(io, mat[1:i, i])
             end
         else
@@ -169,7 +183,7 @@ function samplexy(XY:AbstractString, loci, ids)
     (mt == 'F' && et == Int8) || error("Only support F matrix of Int8")
     (mj == 0 && length(loci) ≤ ir && length(ids) ≤ ic ÷ 2) || error("Too many loci or IDs")
     hap = Mmap.mmap(XY, Matrix{et}, (ir, ic), 24)
-    hap[loci, 2ids .- 1]
+    hap[loci, 2ids.-1]
 end
 
 """
@@ -223,8 +237,15 @@ Sample founder genotypes from base haplotypes in `ixy` and `imp`.
 Write the results into 3 files, the genotype file, the map file and 
 a binary file indicate which loci are QTLs, and which loci are chip SNP.
 """
-function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
-    nlc=50_000, nqtl=5_000, nref=10_000, dir="")
+function sampleFdr(
+    ixy::AbstractString,
+    imp::AbstractString,
+    nhp;
+    nlc = 50_000,
+    nqtl = 5_000,
+    nref = 10_000,
+    dir = "",
+)
     # Prepare files
     (isfile(ixy) && isfile(imp)) || error("File $ixy or $imp doesn't exist")
     iseven(nhp) || error("Number of haplotypes $nhp must be even")
@@ -238,9 +259,10 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
     (mt == 'F' && mj ∈ (0, 1)) || error("Not a haplotype file: $mj")
     tlc, thp = (mj == 1) ? (cs, rs) : (rs, cs)
     # to make simpler codes
-    ((0 < nlc ≤ tlc) && (0 < nhp ≤ thp) && (0 ≤ nqtl < tlc) && (iseven(nhp))) ||
-        error("Parameter nlc($nlc), nhp($nhp), or nqtl($nqtl) not right for tlc($tlc), and thp($thp)")
- 
+    ((0 < nlc ≤ tlc) && (0 < nhp ≤ thp) && (0 ≤ nqtl < tlc) && (iseven(nhp))) || error(
+        "Parameter nlc($nlc), nhp($nhp), or nqtl($nqtl) not right for tlc($tlc), and thp($thp)",
+    )
+
     # Sample loci
     lqtl = sort(shuffle(1:tlc)[1:nqtl]) # QTL loci
     slc = sort(shuffle(1:tlc)[1:nlc])   # chip loci
@@ -262,7 +284,9 @@ function sampleFdr(ixy::AbstractString, imp::AbstractString, nhp;
 
     # sampled genotypes
     open(oxy, "w") do io # always write loci majored
-        igt = (mj == 0) ? Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24) : Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24)'
+        igt =
+            (mj == 0) ? Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24) :
+            Mmap.mmap(ixy, Matrix{et}, (rs, cs), 24)'
         ohdr = xyheader('X', 'Y', ' ', mt, 0, ihdr.e, '\n', '\n', length(flc), nhp)
         write(io, Ref(ohdr))
         write(io, igt[flc, shp])
@@ -319,11 +343,11 @@ function uniqSNP(ixy::AbstractString; LociMajored = true, inc = 2)
         write(io, Ref(ohdr))
         usnp = Mmap.mmap(io, Matrix{UInt16}, (or, oc), 24)
         if LociMajored && mj == cc
-            for i in 1:or
+            for i = 1:or
                 codesnp(view(gt, i, :), view(usnp, i, :), inc)
             end
         elseif !LociMajored && mj == cc
-            for i in 1:oc
+            for i = 1:oc
                 codesnp(gt[:, i], usnp[:, i], inc)
             end
         end
@@ -396,8 +420,8 @@ end
 Given the 4 haplotypes of a pair of individuals, calculate the mean IBD.
 This function ignores bounder check, and is set internal.
 """
-function _mIBD(a::T, b::T, c::T, d::T) where T<:AbstractVector
-    r = 0.
+function _mIBD(a::T, b::T, c::T, d::T) where {T<:AbstractVector}
+    r = 0.0
     r += sum(a .== c)
     r += sum(a .== d)
     r += sum(b .== c)
@@ -416,18 +440,22 @@ obtained from dense genotypes very accurately.
 - `loc` is a Bool vector, specifies which loci to be used,
 - `ids` specifies the ID whose gamete matrix is to be generated.
 """
-function gametemat(XY::AbstractString,
-    loc::AbstractVector{Bool},
-    ids::AbstractVector{Int},
-    )
+function gametemat(XY::AbstractString, loc::AbstractVector{Bool}, ids::AbstractVector{Int})
     issorted(ids) || sort!(ids)
     mat, nid = xymap(XY), length(ids)
-    (length(loc) ≠ size(mat, 1) || 2ids[end] > size(mat, 2)) && error("Not number of loci or IDs")
+    (length(loc) ≠ size(mat, 1) || 2ids[end] > size(mat, 2)) &&
+        error("Not number of loci or IDs")
     ihp = sort([2ids .- 1; 2ids])
     gt = copy(mat[loc, ihp])
     IBD = zeros(nid, nid)
-    Threads.@threads for (i, j) in [(i, j) for i in 1:nid for j in 1:i]
-        IBD[j, i] = IBD[i, j] = _mIBD(view(gt, :, 2i-1), view(gt, :, 2i), view(gt, :, 2j-1), view(gt, :, 2j))
+    Threads.@threads for (i, j) in [(i, j) for i = 1:nid for j = 1:i]
+        IBD[j, i] =
+            IBD[i, j] = _mIBD(
+                view(gt, :, 2i - 1),
+                view(gt, :, 2i),
+                view(gt, :, 2j - 1),
+                view(gt, :, 2j),
+            )
     end
     IBD
     #=
@@ -452,24 +480,29 @@ information stored in the `XY` file. It them average the 4 cells to calculate
 the relationships between ID based on IBD information. In reality, these IBD
 information can be obtained from dense genotypes very accurately.
 """
-function gametemat(XY::AbstractString, # uniquely coded genotypes
+function gametemat(
+    XY::AbstractString, # uniquely coded genotypes
     loc::AbstractVector{Bool}, # specify which loci to be used
     ids::AbstractVector{Int}, # specify which IDs to be used
     jds::AbstractVector{Int}, # specify which IDs to be used
-    )
+)
     issorted(ids) || sort!(ids)
     issorted(jds) || sort!(jds)
     mat, mid, nid = xymap(XY), length(ids), length(jds)
-    (length(loc) ≠ size(mat, 1) || 
-     2ids[end] > size(mat, 2) ||
-     2jds[end] > size(mat, 2)) && error("Not number of loci or IDs")
+    (length(loc) ≠ size(mat, 1) || 2ids[end] > size(mat, 2) || 2jds[end] > size(mat, 2)) &&
+        error("Not number of loci or IDs")
     ihp = sort([2ids .- 1; 2ids])
     jhp = sort([2jds .- 1; 2jds])
     igt = copy(mat[loc, ihp])
     jgt = copy(mat[loc, jhp])
     IBD = zeros(mid, nid)
-    Threads.@threads for (i, j) in [(i, j) for i in 1:mid for j in 1:nid]
-        IBD[i, j] = _mIBD(view(igt, :, 2i-1), view(igt, :, 2i), view(jgt, :, 2j-1), view(jgt, :, 2j))
+    Threads.@threads for (i, j) in [(i, j) for i = 1:mid for j = 1:nid]
+        IBD[i, j] = _mIBD(
+            view(igt, :, 2i - 1),
+            view(igt, :, 2i),
+            view(jgt, :, 2j - 1),
+            view(jgt, :, 2j),
+        )
     end
     IBD
     #=
@@ -497,7 +530,7 @@ function _vcfstr2allele(str, loc, sep)
     for gt in v[10:end]
         id += 1
         loc[2id-1] = parse(Int8, gt[1])
-        loc[2id]   = parse(Int8, gt[3])
+        loc[2id] = parse(Int8, gt[3])
     end
     parse(Int8, v[1]), parse(Int32, v[2]), sum(loc) / 2id
 end

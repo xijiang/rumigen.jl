@@ -6,19 +6,17 @@ Clone `MaCS` into a temp dir under `tdir` and compile it into `tdir`.
 - `g++`, and `boost-devel` must be installed.
 - this function return the absolute path of newly compiled `macs` in the end.
 """
-function make_macs(; tdir=pwd())
+function make_macs(; tdir = pwd())
     macs = Sys.which("macs")
     isnothing(macs) || return macs
-    
+
     macs = joinpath(abspath(tdir), "macs")
     @debug "Making macs"
     isfile(macs) && return macs
     isdir(tdir) || mkpath(tdir)
     wdir = mktempdir(tdir)
     run(`git clone https://github.com/gchen98/macs $wdir`)
-    src = joinpath.(wdir, ["simulator.cpp",
-        "algorithm.cpp",
-        "datastructures.cpp"])
+    src = joinpath.(wdir, ["simulator.cpp", "algorithm.cpp", "datastructures.cpp"])
     target = joinpath(tdir, "macs")
     run(`g++ -o $target -O3 -Wall $src`)
     return macs
@@ -50,7 +48,7 @@ function read_macs(file, trans = false)
     nlc = length(ps)
     gt = reshape(gt, :, nlc)
     trans && (gt = gt')
-    fq = trans ? mean(gt, dims=2) : mean(gt, dims=1)
+    fq = trans ? mean(gt, dims = 2) : mean(gt, dims = 1)
     return gt, vec(ps), vec(fq)
 end
 
@@ -65,7 +63,9 @@ i.e., 0 <--> 1. (2023-06-24)
 """
 function macs2xy(dir; swap = false)
     bar = randstring(5)         # barcode of this simulation
-    tprintln("  - Collect founder data {cyan}$bar{/cyan} from MaCS in {cyan}$dir{/cyan} of chromosome:")
+    tprintln(
+        "  - Collect founder data {cyan}$bar{/cyan} from MaCS in {cyan}$dir{/cyan} of chromosome:",
+    )
     isdir(dir) || error("$dir not exists")
     hap = joinpath(dir, "../$bar-hap.xy")
     mmp = joinpath(dir, "../$bar-map.ser")
@@ -75,7 +75,7 @@ function macs2xy(dir; swap = false)
         occursin.(r"^chr", f) && push!(chrs, parse(Int8, split(f, '.')[2]))
     end
     sort!(chrs)           # chromosome number in integer, and in order
-    tmp = DataFrame(chr=Int8[], pos=Int64[], frq=Float64[])
+    tmp = DataFrame(chr = Int8[], pos = Int64[], frq = Float64[])
     et = findfirst(x -> x == Int8, vldtypes)
     hdr = xyheader('X', 'Y', ' ', 'F', 1, et, '\n', '\n', 0, 0)
     tid, tlc = 0, 0
@@ -86,15 +86,15 @@ function macs2xy(dir; swap = false)
             chr = joinpath(dir, "chr.$c")
             gt, ps, fq = read_macs(chr)
             if swap # such that the allele frequencies has a 'U' shaped distribution
-                for i in 1:2:size(gt, 2)
+                for i = 1:2:size(gt, 2)
                     (gt[:, i] = 1 .- gt[:, i])
                     fq[i] = 1 - fq[i]
                 end
             end
-            tid  = size(gt, 1)
+            tid = size(gt, 1)
             tlc += size(gt, 2)
             write(io, gt)
-            append!(tmp, DataFrame(chr=c, pos=ps, frq=fq))
+            append!(tmp, DataFrame(chr = c, pos = ps, frq = fq))
         end
         seek(io, 8)
         write(io, [tid, tlc])

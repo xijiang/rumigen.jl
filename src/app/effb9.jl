@@ -26,7 +26,7 @@ function xps_effb9(; describe = true, debug = true)
         describe && tprintln(Term.parse_md(read("docs/effb9.md", String)))
         foo = base_effb9(ppsz, rst)                     # ==> base
         #foo = ""
-        for irpt in 1:nrpt
+        for irpt = 1:nrpt
             @info "Repeat $irpt of $nrpt"
             bar = fdr_effb9(fdr, dir, foo, ppsz, nlc, nqtl, d = dist)
             lmp = deserialize("$dir/$bar-map.ser") # each sample has its own map
@@ -45,7 +45,17 @@ function xps_effb9(; describe = true, debug = true)
             # Genomic selection
             ped = deserialize("$dir/$bar-uhp+ped.ser")
             cp("$dir/$bar-uhp.xy", "$dir/$bar-sgs.xy", force = true)
-            simpleSelection("$dir/$bar-sgs.xy", ped, lmp, nsir, ndam, ngrt, σₑ, ebv = true, gs = true)
+            simpleSelection(
+                "$dir/$bar-sgs.xy",
+                ped,
+                lmp,
+                nsir,
+                ndam,
+                ngrt,
+                σₑ,
+                ebv = true,
+                gs = true,
+            )
             sum_effb9(dir, bar)
             rm.(glob("$dir/$bar-*"))
         end

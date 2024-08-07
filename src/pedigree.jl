@@ -8,12 +8,12 @@ It can also speed up by adding `Thread.@threads` before your pair loop.
 function kinship(ped, i, j)
     (i == 0 || j == 0) && return 0
     ipa, ima = ped[i, :]          # used both for below and the last
-    i == j && (return 1 + .5kinship(ped, ipa, ima))
+    i == j && (return 1 + 0.5kinship(ped, ipa, ima))
     if i < j
         jpa, jma = ped[j, :]
-        return .5(kinship(ped, i, jpa) + kinship(ped, i, jma))
+        return 0.5(kinship(ped, i, jpa) + kinship(ped, i, jma))
     end
-    return .5(kinship(ped, j, ipa) + kinship(ped, j, ima))
+    return 0.5(kinship(ped, j, ipa) + kinship(ped, j, ima))
 end
 
 """
@@ -24,20 +24,20 @@ The memory usage may be bigger than Meuwissen and Luo 1992, or Quaas 1995.
 The speed is however standable.
 The recursive algorithm is also easy to understand.
 """
-function kinship(ped, i::Int, j::Int, dic::Dict{Tuple{Int, Int}, Float64})
+function kinship(ped, i::Int, j::Int, dic::Dict{Tuple{Int,Int},Float64})
     (i == 0 || j == 0) && return 0
     ip, im = ped[i, :]
     if i == j
-        haskey(dic, (i, i)) || (dic[(i, i)] = 1 + .5kinship(ped, ip, im, dic))
+        haskey(dic, (i, i)) || (dic[(i, i)] = 1 + 0.5kinship(ped, ip, im, dic))
         return dic[(i, i)]
     end
     if i < j
         jp, jm = ped[j, :]
         haskey(dic, (i, jp)) || (dic[(i, jp)] = kinship(ped, i, jp, dic))
         haskey(dic, (i, jm)) || (dic[(i, jm)] = kinship(ped, i, jm, dic))
-        return .5(dic[(i, jp)] + dic[(i, jm)])
+        return 0.5(dic[(i, jp)] + dic[(i, jm)])
     end
-    return .5(kinship(ped, j, ip, dic) + kinship(ped, j, im, dic))
+    return 0.5(kinship(ped, j, ip, dic) + kinship(ped, j, im, dic))
 end
 
 """
@@ -51,7 +51,7 @@ function ped_F(ped; force = false)
     if "F" ∈ names(ped)
         force ? select!(ped, Not([:F])) : return
     end
-    F = [0. for _ in eachrow(ped)]
+    F = [0.0 for _ in eachrow(ped)]
     dic = Relation()
     for i in eachrow(ped)
         # for the `dic` here, no need to consider full siblings
@@ -74,11 +74,11 @@ function ped_D(ped; force = false)
     #"F" ∈ names(ped) || ped_F(ped)
     N = size(ped, 1)
     "F" ∈ names(ped) || (ped.F = diag(Amat(ped, m = N)))
-    D = .5ones(N)
+    D = 0.5ones(N)
     for i in eachrow(ped)
         pa, ma = ped[i, :]
-        vp = (pa == 0) ? -.25 : .25ped.F[pa]
-        vm = (ma == 0) ? -.25 : .25ped.F[ma]
+        vp = (pa == 0) ? -0.25 : 0.25ped.F[pa]
+        vm = (ma == 0) ? -0.25 : 0.25ped.F[ma]
         D[i] -= (vp + vm)
     end
     ped.D = D
@@ -93,9 +93,9 @@ this function return the T matrix used for A⁻¹ calculation.
 function T4A⁻¹(ped)
     R, C, V = Int[], Int[], Float64[]
     for (id, (pa, ma)) in enumerate(eachrow(ped))
-        pa > 0 && pushRCV!(R, C, V, id, pa, -.5)
-        ma > 0 && pushRCV!(R, C, V, id, ma, -.5)
-        pushRCV!(R, C, V, id, id, 1.)
+        pa > 0 && pushRCV!(R, C, V, id, pa, -0.5)
+        ma > 0 && pushRCV!(R, C, V, id, ma, -0.5)
+        pushRCV!(R, C, V, id, id, 1.0)
     end
     return sparse(R, C, V)
 end
@@ -113,9 +113,9 @@ function Amat(ped; m = 30_000)
     N > m && error("Pedigree size ($N > $m) too big")
     A = zeros(N, N) + I(N)
     for (i, (pa, ma)) in enumerate(eachrow(select(ped, :pa, :ma)))
-        pa * ma ≠ 0 && (A[i, i] += .5A[pa, ma])
-        for j in 1:i-1
-            pa ≠ 0 && (A[i, j]  = 0.5A[j, pa])
+        pa * ma ≠ 0 && (A[i, i] += 0.5A[pa, ma])
+        for j = 1:i-1
+            pa ≠ 0 && (A[i, j] = 0.5A[j, pa])
             ma ≠ 0 && (A[i, j] += 0.5A[j, ma])
             A[j, i] = A[i, j]
         end
@@ -132,8 +132,8 @@ function A⁻¹(ped)
     tpd = select(ped, :pa, :ma)
     T = T4A⁻¹(tpd)
     "D" ∈ names(tpd) || ped_D(tpd)
-    D = Diagonal(1. ./ tpd.D)
-    T'D*T
+    D = Diagonal(1.0 ./ tpd.D)
+    T'D * T
 end
 
 """
@@ -231,7 +231,7 @@ function grmiv(xy::AbstractString, chip)
     g isa AbstractString && (@error "Not enough memory to calculate GRM")
     LAPACK.potrf!('L', g)
     LAPACK.potri!('L', g)
-    for i in 2:size(g, 1)
+    for i = 2:size(g, 1)
         g[i-1, i:end] = g[i:end, i-1]
     end
     g
@@ -246,10 +246,12 @@ function grm(xy::AbstractString, chip)
     mt, et, mj, ir, ic = xyhdr(hdr)
     mt == 'F' || error("File $xy is not a genotype file")
     (et == Int8 || et == UInt16) || error("File $xy is not a valid genotype file")
-    hps = (mj == 0) ? Mmap.mmap(xy, Matrix{et}, (ir, ic), 24) :
+    hps =
+        (mj == 0) ? Mmap.mmap(xy, Matrix{et}, (ir, ic), 24) :
         Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)'
     snps = view(hps, chip, :)
-    gt = (et == Int8) ? snps[:, 1:2:end] + snps[:, 2:2:end] :
+    gt =
+        (et == Int8) ? snps[:, 1:2:end] + snps[:, 2:2:end] :
         Int8.(isodd.(snps[:, 1:2:end])) + Int8.(isodd.(snps[:, 2:2:end]))
     grm(gt) + 0.01I
 end
@@ -259,10 +261,12 @@ function grm(xy::AbstractString, chip, ihs)
     mt, et, mj, ir, ic = xyhdr(hdr)
     mt == 'F' || error("File $xy is not a genotype file")
     (et == Int8 || et == UInt16) || error("File $xy is not a valid genotype file")
-    hps = (mj == 0) ? Mmap.mmap(xy, Matrix{et}, (ir, ic), 24) :
+    hps =
+        (mj == 0) ? Mmap.mmap(xy, Matrix{et}, (ir, ic), 24) :
         Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)'
     snps = view(hps, chip, ihs)
-    gt = (et == Int8) ? snps[:, 1:2:end] + snps[:, 2:2:end] :
+    gt =
+        (et == Int8) ? snps[:, 1:2:end] + snps[:, 2:2:end] :
         Int8.(isodd.(snps[:, 1:2:end])) + Int8.(isodd.(snps[:, 2:2:end]))
     grm(gt) + 0.001I
 end
@@ -301,17 +305,17 @@ function A⁻¹(ped, ser)
     F = diag(Amat(ped, m = nid)) .- 1
 
     # update D
-    for i in pid+1:nid
+    for i = pid+1:nid
         pa, ma = tpd[i, :]
-        vp = (pa == 0) ? -.25 : .25F[pa]
-        vm = (ma == 0) ? -.25 : .25F[ma]
-        push!(D, .5 - vp - vm)
+        vp = (pa == 0) ? -0.25 : 0.25F[pa]
+        vm = (ma == 0) ? -0.25 : 0.25F[ma]
+        push!(D, 0.5 - vp - vm)
     end
 
-    di = Diagonal(1. ./ D)
+    di = Diagonal(1.0 ./ D)
 
     serialize(ser, (R, C, V, D))
-    T'di*T
+    T'di * T
 end
 
 function initUSNP(ped; nlc = 1000)
@@ -319,14 +323,14 @@ function initUSNP(ped; nlc = 1000)
     nfdr = sum(iszero, tpd.pa) + sum(iszero, tpd.ma)
     et = nfdr < 256 ? UInt8 : UInt16
     gt, usnp = zeros(et, nlc, 2nid), 1
-    for id in 1:nid
+    for id = 1:nid
         pa, ma = tpd[id, :]
         if pa == 0
             gt[:, 2id-1] .= usnp
             usnp += 1
         end
         if ma == 0
-            gt[:, 2id]   .= usnp
+            gt[:, 2id] .= usnp
             usnp += 1
         end
     end
@@ -355,7 +359,7 @@ function fastF(ped; nlc = 1000, ϵ = 1e-3, inc = 10)
     eid = ngrt ≤ 10 ? nid : findfirst(x -> x == grt[11], ped.grt) - 1
 
     F, dic = zeros(nid), Relation() # exact F for the first 10 generations
-    for i in 1:eid
+    for i = 1:eid
         F[i] = kinship(ped, i, i, dic) - 1
     end
     ped.F = F
@@ -363,16 +367,16 @@ function fastF(ped; nlc = 1000, ϵ = 1e-3, inc = 10)
     ngrt ≤ 10 && return ped
 
     # approximate F for the rest generations
-    gt, vf = initUSNP!(ped, nlc = nlc), 1.
+    gt, vf = initUSNP!(ped, nlc = nlc), 1.0
     randrop(gt, ped) # check pedigree
     any(gt .== 0) && error("Pedigree has wrong ordered IDs.")
     mf, sf = zeros(eid), zeros(eid)
     while vf > ϵ
-        for _ in 1:inc
+        for _ = 1:inc
             tf = randrop!(gt, ped)
             tf = tf[1:eid] - F[1:eid]
             mf += tf
-            sf += tf.^2
+            sf += tf .^ 2
         end
         vf = (sum(sf) - nid * mean(mf)^2) / (nid - 1)
     end
@@ -385,24 +389,24 @@ and `ngrt` generations.
 Randomly sample `nsir` sires and `ndam` dams from the previous generation.
 This is equavalent to `function randomMate(ped::DataFrame, noff)` in `mate.jl`.
 """
-function randped(nsir::T, ndam::T, nsib::T, ngrt::T) where T <: Int64
+function randped(nsir::T, ndam::T, nsib::T, ngrt::T) where {T<:Int64}
     nid = nsib == 1 ? nsir + ndam : max(nsir, ndam) * nsib
-    ped = DataFrame(pa = 0,
-                    ma = 0,
-                    sex = rand((0, 1), nid),
-                    grt = 0)
-    for igrt in 1:ngrt
-        pp = @view ped[ped.grt .== igrt - 1, :]
+    ped = DataFrame(pa = 0, ma = 0, sex = rand((0, 1), nid), grt = 0)
+    for igrt = 1:ngrt
+        pp = @view ped[ped.grt.==igrt-1, :]
         pa = findall(x -> x == 1, pp.sex) .+ (igrt - 1) * nid
         length(pa) > nsir && (pa = shuffle(pa)[1:nsir])
         ma = findall(x -> x == 0, pp.sex) .+ (igrt - 1) * nid
         length(ma) > ndam && (ma = shuffle(ma)[1:ndam])
-        append!(ped, DataFrame(
-            pa = rand(pa, nid),
-            ma = rand(ma, nid),
-            sex = rand((0, 1), nid),
-            grt = igrt,
-        ))
+        append!(
+            ped,
+            DataFrame(
+                pa = rand(pa, nid),
+                ma = rand(ma, nid),
+                sex = rand((0, 1), nid),
+                grt = igrt,
+            ),
+        )
     end
     sort!(ped, [:pa, :ma])
 end
@@ -411,19 +415,25 @@ function quickped(nid::Int, ngrt::Int; ratio = 1.0)
     ndam = Int(round(nid * ratio / (1 + ratio)))
     nsir = nid - ndam
     nsir, ndam
-    ped = DataFrame(pa = 0,
-                    ma = 0,
-                    sex = shuffle([ones(Int, nsir); zeros(Int, ndam)]),
-                    grt = 0)
-    for igrt in 1:ngrt
-        pp = @view ped[ped.grt .== igrt - 1, :]
+    ped = DataFrame(
+        pa = 0,
+        ma = 0,
+        sex = shuffle([ones(Int, nsir); zeros(Int, ndam)]),
+        grt = 0,
+    )
+    for igrt = 1:ngrt
+        pp = @view ped[ped.grt.==igrt-1, :]
         pa = findall(x -> x == 1, pp.sex) .+ (igrt - 1) * nid
         ma = findall(x -> x == 0, pp.sex) .+ (igrt - 1) * nid
-        append!(ped, DataFrame(
-            pa = rand(pa, nid),
-            ma = rand(ma, nid),
-            sex = shuffle([ones(Int, nsir); zeros(Int, ndam)]),
-            grt = igrt,))
+        append!(
+            ped,
+            DataFrame(
+                pa = rand(pa, nid),
+                ma = rand(ma, nid),
+                sex = shuffle([ones(Int, nsir); zeros(Int, ndam)]),
+                grt = igrt,
+            ),
+        )
     end
     sort!(ped, [:pa, :ma])
 end

@@ -9,7 +9,7 @@ the constraint on relationship is `K=2k(t)`.
 
 Based on Theo's function below with some simplifications.
 """
-function myopt(ped, A, K; silent=false)
+function myopt(ped, A, K; silent = false)
     ["ebv", "sex"] ⊆ names(ped) || error("Not a proper pedigree")
     issymmetric(A) || error("A is not symmetric")
     nid, itr = size(ped, 1), 0
@@ -37,9 +37,12 @@ function myopt(ped, A, K; silent=false)
         ix = findall(c .> 0) # indices of ID of next round
         silent || tprint("  iter: $itr, {cyan}nID{/cyan}: $(length(ix))")
         if length(ix) == length(id)
-            silent || tprintln("\n{blue}Solution found{/blue}, 
-                                n = $(length(ix))",
-                "c'Ac = ", round(c'A[id, id] * c, digits=3))
+            silent || tprintln(
+                "\n{blue}Solution found{/blue}, 
+                 n = $(length(ix))",
+                "c'Ac = ",
+                round(c'A[id, id] * c, digits = 3),
+            )
             rc = zeros(nid)
             rc[id] = c
             return rc
@@ -100,7 +103,12 @@ function fungencont(dat, A, K)
         denominat = 4 * K - sum(QAQI)
         numerat = u' * (AI - AI * Q * QAQI * Q' * AI) * u
         if (denominat <= 0.0)
-            println(" cannot achieve constraint ", K, " MINIMISATION OF RELATIONSHIPS ", size(QAQI))
+            println(
+                " cannot achieve constraint ",
+                K,
+                " MINIMISATION OF RELATIONSHIPS ",
+                size(QAQI),
+            )
             ierr = 0
             if (isex == 2)
                 c = 0.5 * AI * Q * QAQI * ones(size(QAQI, 1))
@@ -137,7 +145,6 @@ function fungencont(dat, A, K)
             return 2 * cc
         end
     end
-
 end #function
 
 # DOSc optimises gains with known cost factor lamb0
@@ -162,7 +169,6 @@ function DOSc(lamb0, uhat, A, A12, s, Ktilde, Nx, sex)
     sumS = sumD = sumSD = sumA12S = sumA12D = Kval = 0.0
     setS = Int64.([])
     setD = Int64.([])
-
 
     for ianim = 1:sum(Nx)  #select Nx animals
         #step1:
@@ -199,8 +205,10 @@ function DOSc(lamb0, uhat, A, A12, s, Ktilde, Nx, sex)
         #Step3
         Kval = 0.0
         (nx[1] > 0) ? Kval += s * fact * fact * sumS / nx[1] / nx[1] : nothing
-        (size(nx, 1) == 2) && (nx[2] > 0) ? Kval += s * fact * fact * sumD / nx[2] / nx[2] : nothing
-        (size(nx, 1) == 2) && (nx[2] * nx[1] > 0) ? Kval += s * fact * sumSD / nx[1] / nx[2] : nothing
+        (size(nx, 1) == 2) && (nx[2] > 0) ? Kval += s * fact * fact * sumD / nx[2] / nx[2] :
+        nothing
+        (size(nx, 1) == 2) && (nx[2] * nx[1] > 0) ?
+        Kval += s * fact * sumSD / nx[1] / nx[2] : nothing
         if (1 - s > 0)
             (nx[1] > 0) ? Kval += 2 * (1 - s) * fact * sumA12S / nx[1] : nothing
             (nx[2] > 0) ? Kval += 2 * (1 - s) * fact * sumA12D / nx[2] : nothing
@@ -212,13 +220,10 @@ function DOSc(lamb0, uhat, A, A12, s, Ktilde, Nx, sex)
             Kval <= Ktilde ? break : nothing
             all(nx .== Nx) ? break : nothing
         end
-
     end
     # println("lamb, Kval,cAc ", lamb0, " ", Kval, " ", c' * A * c * fact^2, " nx ", nx)
     return c, nx
-
 end #function
-
 
 """
     function DOSop(uhat, A, A12, s, Ktilde, Nx, sex)
@@ -297,7 +302,9 @@ function DOSop(uhat, A, A12, s, Ktilde, Nx, sex)
         f3 = sum(c' * uhat)
     end
     if !(f0 <= max(f1, f2) >= f3)
-        println("problem is NOT bracketed by $(x0), $(x1), $(x2), $(x3) with gains $(f0), $(f1), $(f2), $(f3) ")
+        println(
+            "problem is NOT bracketed by $(x0), $(x1), $(x2), $(x3) with gains $(f0), $(f1), $(f2), $(f3) ",
+        )
         return zeros(size(uhat, 1))
     end
 
@@ -327,5 +334,4 @@ function DOSop(uhat, A, A12, s, Ktilde, Nx, sex)
         (c, n) = DOSc(x2, uhat, A, A12, s, Ktilde, Nx, sex)
         return vec(c)
     end
-
 end #function

@@ -6,8 +6,8 @@ function incidence_matrix(levels::AbstractVector)
     n, u = length(levels), sort(unique(levels))
     m = length(u)
     x = zeros(n, m)
-    for i in 1:m
-        x[levels .== u[i], i] .= 1
+    for i = 1:m
+        x[levels.==u[i], i] .= 1
     end
     x
 end
@@ -25,7 +25,7 @@ function incidence_matrix(df::DataFrame)
     x, a = [ones(n) zeros(n, m)], 2
     for i in eachindex(u)
         for j in eachindex(u[i])
-            x[df[:, i] .== u[i][j], a] .= 1
+            x[df[:, i].==u[i][j], a] .= 1
             a += 1
         end
     end
@@ -41,7 +41,7 @@ function Zmat(nm)
     n, m = length(nm), sum(nm)
     z = sparse(zeros(m, n))
     a = 1
-    for i in 1:n
+    for i = 1:n
         if nm[i]
             z[a, i] = 1
             a += 1
@@ -119,8 +119,8 @@ function pos_qtl_frq(rst, xps, bar, sel, ppsz)
     lmp = deserialize("$rst/$xps/$bar-map.ser")
     snp = xymap("$rst/$xps/$bar-$sel.xy")
     qgt = isodd.(snp[lmp.qtl, :])
-    for i in 1:nhp:size(qgt, 2)
-        frq = sum(qgt[:, i:i+nhp-1], dims=2)
+    for i = 1:nhp:size(qgt, 2)
+        frq = sum(qgt[:, i:i+nhp-1], dims = 2)
         cnt = zeros(Int, nhp + 1)
         for x in frq
             cnt[x+1] += 1
@@ -129,8 +129,8 @@ function pos_qtl_frq(rst, xps, bar, sel, ppsz)
     end
     qgt = nothing
     ref = isodd.(snp[lmp.ref, :])
-    for i in 1:nhp:size(ref, 2)
-        frq = sum(ref[:, i:i+nhp-1], dims=2)
+    for i = 1:nhp:size(ref, 2)
+        frq = sum(ref[:, i:i+nhp-1], dims = 2)
         cnt = zeros(Int, nhp + 1)
         for x in frq
             cnt[x+1] += 1
@@ -139,8 +139,8 @@ function pos_qtl_frq(rst, xps, bar, sel, ppsz)
     end
     ref = nothing
     chp = isodd.(snp[lmp.chip, :])
-    for i in 1:nhp:size(chp, 2)
-        frq = sum(chp[:, i:i+nhp-1], dims=2)
+    for i = 1:nhp:size(chp, 2)
+        frq = sum(chp[:, i:i+nhp-1], dims = 2)
         cnt = zeros(Int, nhp + 1)
         for x in frq
             cnt[x+1] += 1
@@ -185,36 +185,38 @@ function sumPed(rst, xps, bar, lmp, sel)
     smp = DataFrame(
         mbv = Float64[], # mean breeding value
         vbv = Float64[], # variance of breeding values
-        mF  = Float64[], # mean inbreeding coefficient
+        mF = Float64[], # mean inbreeding coefficient
         mFr = Float64[], # mean inbreeding coefficient from relatives loci
         mFp = Float64[], # mean inbreeding coefficient from pedigree
         bcr = Float64[], # cor(EBV, TBV) both sexes
         scr = Float64[], # cor(EBV, TBV) sires
         dcr = Float64[], # cor(EBV, TBV) dams
-        np  = Float64[], # number of sires in each generation
-        nm  = Float64[], # number of dams in each generation
+        np = Float64[], # number of sires in each generation
+        nm = Float64[], # number of dams in each generation
         ncp = Float64[], # number of positive sire c values in each generation
-        ncm = Float64[]) # number of positive dam c values in each generation
+        ncm = Float64[],
+    ) # number of positive dam c values in each generation
     for grt in groupby(ped, :grt)
-        mbv  = mean(grt.tbv)
-        vbv  = var(grt.tbv)
-        mF   = mean(grt.F)
-        mFr  = mean(grt.Fr)
-        mFp  = mean(grt.Fp)
-        bcr  = cor(grt.ebv, grt.tbv)
+        mbv = mean(grt.tbv)
+        vbv = var(grt.tbv)
+        mF = mean(grt.F)
+        mFr = mean(grt.Fr)
+        mFp = mean(grt.Fp)
+        bcr = cor(grt.ebv, grt.tbv)
         sirs = grt.sex .== 1
         dams = grt.sex .== 0
-        scr  = cor(grt.ebv[sirs], grt.tbv[sirs])
-        dcr  = cor(grt.ebv[dams], grt.tbv[dams])
-        np   = length(unique(grt.pa))
-        nm   = length(unique(grt.ma))
-        ncp  = sum(grt.c[sirs] .> 0)
-        ncm  = sum(grt.c[dams] .> 0)
+        scr = cor(grt.ebv[sirs], grt.tbv[sirs])
+        dcr = cor(grt.ebv[dams], grt.tbv[dams])
+        np = length(unique(grt.pa))
+        nm = length(unique(grt.ma))
+        ncp = sum(grt.c[sirs] .> 0)
+        ncm = sum(grt.c[dams] .> 0)
         push!(smp, (mbv, vbv, mF, mFr, mFp, bcr, scr, dcr, np, nm, ncp, ncm))
     end
     ips = idealPop("$rst/$xps/$bar-$sel.xy", ped.grt, lmp)
     open("$rst/$xps/$xps.bin", "a") do io
-        write(io,
+        write(
+            io,
             smp.mbv, # 1
             smp.vbv, # as requested by SMS on 2023-05-21, by Theo
             smp.mF,  # 3
@@ -240,7 +242,7 @@ function sumPed(rst, xps, bar, lmp, sel)
             ips.cvr,     # 23. covariance begween generation 0 and 20, reference
             ips.cvc,     # 24. covariance begween generation 0 and 20, chip
             ips.cvq,     # 25. covariance begween generation 0 and 20, qtl
-            )
+        )
     end
 end
 
@@ -250,10 +252,7 @@ Prepare a founder population. If `quick` is `true`, the founder population is
 prepared from the test-suite. Otherwise, the founder population is prepared from
 the `founder` folder.
 """
-function prepFdr(rst::AbstractString,
-    quick,
-    ppsz,
-    )
+function prepFdr(rst::AbstractString, quick, ppsz)
     fdr, foo = "$rst/test-suite", "founder"
     if quick
         file = "$rst/test-suite/founder-hap.xy"
@@ -265,12 +264,20 @@ function prepFdr(rst::AbstractString,
         end
         if create
             baz = cattle_base(ppsz, fdr)
-            mv("$rst/test-suite/$baz-map.ser", "$rst/test-suite/founder-map.ser", force=true)
-            mv("$rst/test-suite/$baz-hap.xy", "$rst/test-suite/founder-hap.xy", force=true)
+            mv(
+                "$rst/test-suite/$baz-map.ser",
+                "$rst/test-suite/founder-map.ser",
+                force = true,
+            )
+            mv(
+                "$rst/test-suite/$baz-hap.xy",
+                "$rst/test-suite/founder-hap.xy",
+                force = true,
+            )
         end
     else
         fdr = "$rst/founder"
-        isdir(fdr) && rm(fdr, recursive=true, force=true)
+        isdir(fdr) && rm(fdr, recursive = true, force = true)
         mkpath(fdr)
         foo = cattle_base(ppsz, fdr)
     end
@@ -302,7 +309,7 @@ function Ceiling(;
     qd = Beta(0.75, 0.75), # allele frequency distribution
 )
     C = 0.0        # Ceiling height
-    for _ in 1:nRepeat
+    for _ = 1:nRepeat
         a = rand(ad, nQTL) # effects of SNP 1s
         p = rand(qd, nQTL) # U-shaped allele frequencies
         σ = sqrt(sum(2p .* (1 .- p) .* a .^ 2)) # genic std
@@ -312,7 +319,7 @@ function Ceiling(;
 end
 
 function nfix(frq, F, maf)
-    n = 0.
+    n = 0.0
     for q in frq
         q < maf && (n += exp(-2q / F))
     end
@@ -342,7 +349,7 @@ function grtfrq(xy, grt)
     for g in gs
         cg = grt .== g
         cgt = isodd.(gt[:, cg])
-        append!(frq, sum(cgt, dims=2))
+        append!(frq, sum(cgt, dims = 2))
     end
     reshape(frq, dims[1], ng)
 end

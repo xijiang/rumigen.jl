@@ -13,7 +13,7 @@ function randomMate(nsir::Int, ndam::Int; noff = 0)
     while length(ma) < noff
         append!(ma, shuffle(1:ndam))
     end
-    sortslices([pa[1:noff] ma[1:noff] .+ nsir], dims=1, by=x -> (x[1], x[2]))
+    sortslices([pa[1:noff] ma[1:noff] .+ nsir], dims = 1, by = x -> (x[1], x[2]))
 end
 
 """
@@ -31,7 +31,7 @@ function randomMate(sires, dams; noff = 0)
     while length(ma) < noff
         append!(ma, shuffle(dams))
     end
-    sortslices([pa[1:noff] ma[1:noff]], dims=1, by=x -> (x[1], x[2]))
+    sortslices([pa[1:noff] ma[1:noff]], dims = 1, by = x -> (x[1], x[2]))
 end
 
 #=
@@ -87,7 +87,7 @@ function randomMate(ped::DataFrame, noff)
     dam = findall(sex .== 0)
     pa = sample(sir, Weights(c[sir]), noff)
     ma = sample(dam, Weights(c[dam]), noff)
-    sortslices([pa ma], dims=1, by=x -> (x[1], x[2]))
+    sortslices([pa ma], dims = 1, by = x -> (x[1], x[2]))
 end
 
 """
@@ -138,11 +138,13 @@ A DataFrame of 4-column for each chromosome is returned:
 - number of loci
 - beginning number of the first locus
 """
-function sumMap(lmp; cM=1e6)
-    df = DataFrame(chr=Int8[],
-        len=Float64[], # as λ
-        nlc=Int[],
-        bgn=Int[])
+function sumMap(lmp; cM = 1e6)
+    df = DataFrame(
+        chr = Int8[],
+        len = Float64[], # as λ
+        nlc = Int[],
+        bgn = Int[],
+    )
     bgn = 1
     for grp in groupby(lmp, :chr)
         chr = first(grp).chr
@@ -183,13 +185,13 @@ Linkage map summary `lms` is from `summap`.
 """
 function drop(pg::AbstractArray, og::AbstractArray, pm, lms)
     nf = size(pm)[1]
-    Threads.@threads for id in 1:nf
+    Threads.@threads for id = 1:nf
         ip = pm[id, 1]
         pa = view(pg, :, 2ip-1:2ip)
         zi = vec(view(og, :, 2id - 1))
         gamete(pa, zi, lms)
     end
-    Threads.@threads for id in 1:nf
+    Threads.@threads for id = 1:nf
         im = pm[id, 2]
         ma = view(pg, :, 2im-1:2im)
         zi = vec(view(og, :, 2id))
@@ -212,9 +214,9 @@ function randrop!(gt, ped)
     (nlc, nhp), nid = size(gt), size(ped, 1)
     nhp == 2nid || error("Haplotypes do not match pedigree")
     F = zeros(nid)
-    for id in 1:nid
+    for id = 1:nid
         pa, ma = ped.pa[id], ped.ma[id]
-        pa > 0 && _drop(gt, pa, view(gt, :, 2id-1))
+        pa > 0 && _drop(gt, pa, view(gt, :, 2id - 1))
         ma > 0 && _drop(gt, ma, view(gt, :, 2id))
         pa * ma > 0 && (F[id] = sum(gt[:, 2id-1] .== gt[:, 2id]) / nlc)
     end
@@ -234,7 +236,7 @@ function drop(fra::AbstractString, til::AbstractString, pm, lms)
     pg = Mmap.mmap(fra, Matrix{et}, (ir, ic), 24)
     noff = size(pm, 1)
     open(til, "w") do io
-        ohdr = xyheader('X','Y',' ',mt,mj,ihdr.e,'\n','\n',ir,2noff)
+        ohdr = xyheader('X', 'Y', ' ', mt, mj, ihdr.e, '\n', '\n', ir, 2noff)
         write(io, Ref(ohdr))
         og = zeros(et, ir, noff * 2)
         drop(pg, og, pm, lms)
@@ -253,13 +255,13 @@ function drop(pg::AbstractArray, pm, lms)
     nid, nlc = size(pm, 1), size(pg, 1)
     og = zeros(Int8, nlc, nid * 2)
 
-    Threads.@threads for id in 1:nid
+    Threads.@threads for id = 1:nid
         ip = pm[id, 1]
         pa = view(pg, :, 2ip-1:2ip)
         zi = vec(view(og, :, 2id - 1))
         gamete(pa, zi, lms)
     end
-    Threads.@threads for id in 1:nid
+    Threads.@threads for id = 1:nid
         im = pm[id, 2]
         ma = view(pg, :, 2im-1:2im)
         zi = vec(view(og, :, 2id))
@@ -279,7 +281,7 @@ Linkage map summary `lms` is from `summap` of module ``Sim``.
 When `merge = true`, the dropped haplotypes will be merged into genotypes.
 It is also transposed before written to a file.
 """
-function drop_by_chr(fph::String, bar::String, pm, lms; merge=false)
+function drop_by_chr(fph::String, bar::String, pm, lms; merge = false)
     nlc, nhp = Fio.readdim(fph)
     nof = size(pm)[1]
     mph = Mmap.mmap(fph, Matrix{Int8}, (nlc, nhp), 24)
@@ -290,7 +292,7 @@ function drop_by_chr(fph::String, bar::String, pm, lms; merge=false)
         til = cln + fra - 1
         oh = zeros(Int8, cln, 2nof)
         ph = copy(mph[fra:til, :])
-        drop(ph, oh, pm, DataFrame(chr=chr, len=len, nlc=cln, bgn=1))
+        drop(ph, oh, pm, DataFrame(chr = chr, len = len, nlc = cln, bgn = 1))
         if merge
             open("$bar-$chr.bin", "w") do io
                 # write(io, [cln, nof, Fio.typec(Int8)])
@@ -298,7 +300,7 @@ function drop_by_chr(fph::String, bar::String, pm, lms; merge=false)
                 #     write(io, oh[:, 2i-1] + oh[:, 2i])
                 # end
                 write(io, [nof, cln, Fio.typec(Int8)])
-                for i in 1:cln
+                for i = 1:cln
                     write(io, oh[i, 1:2:2nof] + oh[i, 2:2:2nof])
                 end
             end
@@ -338,7 +340,7 @@ Note, the genotypes are of `nid × nlc` of each chromosome.  When `rev
 = true`, the genotypes are collected in reverse order of chrosome
 numbers.
 """
-function collect_gt(bar, lms, loci; rev=false)
+function collect_gt(bar, lms, loci; rev = false)
     nid, _ = Fio.readdim("$bar-$(lms.chr[1]).bin")
     # below commented codes are for matrix of `nlc × nid`.
     #_, nid = Fio.readdim("$bar-$(lms.chr[1]).bin")
@@ -375,8 +377,16 @@ function also check if any intersect of `pa` and `ma` exists.
 
 The newly created haplotypes are written in to `ohp`.
 """
-function drop(php::String, gt::String, pa::AbstractVector{Int}, ma::AbstractVector{Int},
-    nsb::Int, lms, ped, ohp::String)
+function drop(
+    php::String,
+    gt::String,
+    pa::AbstractVector{Int},
+    ma::AbstractVector{Int},
+    nsb::Int,
+    lms,
+    ped,
+    ohp::String,
+)
     ig = ped.grt[end] + 1
     tprintln("  - Dropping into generation $ig")
     # The drop procedure
@@ -384,7 +394,7 @@ function drop(php::String, gt::String, pa::AbstractVector{Int}, ma::AbstractVect
     nsr, ndm = length(pa), length(ma)
     2(nsr + ndm) ≤ size(pg)[2] || error("Not enough haplotypes in $hap for list pa and ma")
     length(intersect(pa, ma)) > 0 && error("Some ID are both sire and dam")
-    pm = repeat(Sim.random_mate(nsr, ndm), inner=(nsb, 1))
+    pm = repeat(Sim.random_mate(nsr, ndm), inner = (nsb, 1))
     og = drop(pg, pm, lms)
     Fio.writemat(ohp, og)
 
@@ -393,7 +403,7 @@ function drop(php::String, gt::String, pa::AbstractVector{Int}, ma::AbstractVect
     nid ÷= 2
     ndum = size(ped, 2) - 4
     sex = rand(0:1, nid)
-    for id in 1:nid
+    for id = 1:nid
         push!(ped, (ig, pa[pm[id, 1]], ma[pm[id, 2]-nsr], sex[id], zeros(ndum)...))
     end
 
@@ -408,7 +418,7 @@ function drop(php::String, gt::String, pa::AbstractVector{Int}, ma::AbstractVect
         seekstart(io)
         write(io, hd)
         seekend(io)
-        for i in 1:nid
+        for i = 1:nid
             write(io, og[:, 2i-1] + og[:, 2i])
         end
     end

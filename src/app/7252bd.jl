@@ -14,28 +14,45 @@ function xps_7252bd(;
     pres = 5,
     dist = Normal(),
     sim = "7252bd",
-    quick_test=true,
-    keep = false
-    )
+    quick_test = true,
+    keep = false,
+)
     dir = "$rst/$sim"
     σₑ = sqrt((1 - h²) / h²) * σₐ
-    isdir(dir) && rm(dir, recursive=true, force=true)
+    isdir(dir) && rm(dir, recursive = true, force = true)
     mkpath(dir)
-    serialize("$dir/par.ser", (nlc=nlc, nqtl=nqtl, nref=nref, ngrt=ngrt, ΔF=ΔF,
-        nrpt=nrpt, rst=rst, ppsz=ppsz, h²=h², σₐ=σₐ, nsir=nsir, ndam=ndam,
-        pres=pres, dist=dist, sim=sim, quick_test=quick_test))
+    serialize(
+        "$dir/par.ser",
+        (
+            nlc = nlc,
+            nqtl = nqtl,
+            nref = nref,
+            ngrt = ngrt,
+            ΔF = ΔF,
+            nrpt = nrpt,
+            rst = rst,
+            ppsz = ppsz,
+            h² = h²,
+            σₐ = σₐ,
+            nsir = nsir,
+            ndam = ndam,
+            pres = pres,
+            dist = dist,
+            sim = sim,
+            quick_test = quick_test,
+        ),
+    )
 
     # Truncation selection
     scheme_tcs = ("ran", "spd", "sgs", "sis", "sms", "seg")
     # Optimum contribution selection
-    scheme_ocs = ("oap", "oag", "ogg", "oig", "oii", "otg", "dos",
-                  "osg", "oss", "ois")
+    scheme_ocs = ("oap", "oag", "ogg", "oig", "oii", "otg", "dos", "osg", "oss", "ois")
     @info "Simulation for Oda's paper-II begins"
-    for irpt in 1:nrpt
+    for irpt = 1:nrpt
         println()
-        bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
+        bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d = dist)
         lmp = deserialize("$dir/$bar-map.ser") # each sample has its own map
-        ped = initPedigree("$dir/$bar-uhp.xy", lmp, σₑ, fg=-pres)
+        ped = initPedigree("$dir/$bar-uhp.xy", lmp, σₑ, fg = -pres)
         simpleSelection("$dir/$bar-uhp.xy", ped, lmp, nsir, ndam, pres, σₑ, 1)
 
         @info "Calculating IBD matrix of initial population"

@@ -2,7 +2,7 @@
 
 function theoretical_c791a()
     qtls = 100:100:15000
-    
+
     @info "Normal(0, 1)"
     d = Normal(0, 1)
     ideal_normal, sdi_normal = Float64[], Float64[]
@@ -39,7 +39,10 @@ function theoretical_c791a()
         push!(sdi_laplace, b)
     end
 
-    writexy("c791a.xy", [ideal_normal sdi_normal ideal_uniform sdi_uniform ideal_gamma sdi_gamma ideal_laplace sdi_laplace])
+    writexy(
+        "c791a.xy",
+        [ideal_normal sdi_normal ideal_uniform sdi_uniform ideal_gamma sdi_gamma ideal_laplace sdi_laplace],
+    )
 
     #=
     @info "Plotting"
@@ -58,16 +61,13 @@ function theoretical_c791a()
     =#
 end
 
-
 function empirical_c791a()
     nsir, ndam, nsnp = 500, 500, 0
     foo = base_effb9(nsir, ndam, "rst")
-    for nqtl in 100:100:15000
+    for nqtl = 100:100:15000
         @info "nqtl = $nqtl"
         bar = fdr_effb9("rst", "rst/ideal", foo, nsir, ndam, 0, nqtl)
     end
 end
 
-
-function xps_c791a()
-end
+function xps_c791a() end

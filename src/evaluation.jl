@@ -11,11 +11,13 @@ function simpleBLUP(ped, giv, h²)
     X = incidence_matrix(ped.grt)
     Y = collect(skipmissing(ped.pht))
     # Z = I here
-    lhs = [ X'X X'
-            X   I + λ * giv]
+    lhs = [
+        X'X X'
+        X I+λ*giv
+    ]
     rhs = [X'Y; Y]
     nf = size(X, 2)
-    ebv = (lhs \ rhs)[nf + 1 : end]
+    ebv = (lhs\rhs)[nf+1:end]
     ped.ebv = ebv
 end
 
@@ -29,19 +31,24 @@ updating all animals' EBV. You can restore the original EBV by pre-saving them.
 function animalModel(ped, giv, h²; fix = [:grt])
     λ = (1.0 - h²) / h²
     p = .!ismissing.(ped.pht) # only for the phenotyped animals
+    @show length(p), length(ped.pht)
     Z = Zmat(p)
     X = incidence_matrix(select(ped, fix))[p, :]
     Y = collect(skipmissing(ped.pht))
     lhs = if issparse(giv)
-        [X'X X'Z
-         Z'X Z'Z + λ * giv]
+        [
+            X'X X'Z
+            Z'X Z'Z+λ*giv
+        ]
     else
-        Matrix([X'X X'Z
-                Z'X Z'Z + λ * giv])
+        Matrix([
+            X'X X'Z
+            Z'X Z'Z+λ*giv
+        ])
     end
     rhs = vec([X'Y; Z'Y])
     nf = size(X, 2)
-    ebv = (lhs \ rhs)[nf + 1 : end]
+    ebv = (lhs\rhs)[nf+1:end]
     # LAPACK.posv!('U', lhs, rhs)
     ped.ebv = ebv
 end
@@ -73,7 +80,8 @@ function rrblup_mme(x, z, y, h²; dd = 0.01, norm = false)
 
     mem = memavail() * 99 ÷ 100 # not all available memory
     mlh = nb^2 * 8                  # memory for LHS
-    mem < mlh && error("Not enough memory for this calculation: $(mem/1024^3)G < $(mlh/1024^3)G")
+    mem < mlh &&
+        error("Not enough memory for this calculation: $(mem/1024^3)G < $(mlh/1024^3)G")
 
     # the left hand side
     lhs = zeros(nb, nb)
@@ -81,13 +89,13 @@ function rrblup_mme(x, z, y, h²; dd = 0.01, norm = false)
     matmul!(view(lhs, nf+1:nb, 1:nf), z, x)  # block lower left
     matmul!(view(lhs, nf+1:nb, nf+1:nb), z, z') # block lower right
     if norm
-        p = mean(z, dims=2)
+        p = mean(z, dims = 2)
         q = 1 .- p ./ 2
         v = 1 ./ sqrt.(p .* q)
-        s = sum(z, dims=2)
+        s = sum(z, dims = 2)
         se = view(lhs, nf+1:nb, nf+1:nb) # south east of lhs, or genotype sub
-        Threads.@threads for i in 1:nlc
-            for j in 1:i        # ignore the upper triangle
+        Threads.@threads for i = 1:nlc
+            for j = 1:i        # ignore the upper triangle
                 se[i, j] = se[i, j] - p[i] * s[j] - p[j] * s[i] + nid * p[i] * p[j]
             end
         end
@@ -95,15 +103,15 @@ function rrblup_mme(x, z, y, h²; dd = 0.01, norm = false)
         se .*= v'
         sw = view(lhs, nf+1:nb, 1:nf)
         nf = size(x)[2]
-        s = sum(x, dims=1)
-        Threads.@threads for i in 1:nlc
-            for j in 1:nf
+        s = sum(x, dims = 1)
+        Threads.@threads for i = 1:nlc
+            for j = 1:nf
                 sw[i, j] -= p[i]s[j]
             end
         end
         sw .*= v
     end
-    for i in nf+1:nb
+    for i = nf+1:nb
         lhs[i, i] += λ
     end
 
@@ -114,7 +122,7 @@ function rrblup_mme(x, z, y, h²; dd = 0.01, norm = false)
 
     # the solver
     LAPACK.posv!('L', lhs, rhs) # only use data in 'L' triangle of lhs
-    (fixed=rhs[1:nf], a=rhs[nf+1:end], lhs=lhs)
+    (fixed = rhs[1:nf], a = rhs[nf+1:end], lhs = lhs)
 end
 
 """
@@ -128,7 +136,7 @@ function inbreeding(xy, loci)
     gt = Mmap.mmap(xy, Matrix{UInt16}, (ir, ic), 24)
     nlc, nid = sum(loci), ic ÷ 2
     F = zeros(nid)
-    for i in 1:nid
+    for i = 1:nid
         F[i] = sum(gt[loci, 2i-1] .== gt[loci, 2i]) / nlc
     end
     F
@@ -153,15 +161,16 @@ function qtl_fixed(qhp, hgrt, efct, maf)
     i₀ = findall(hgrt .== 0)  # indices of the starting generation
     frq = mean(qhp[:, i₀], dims = 2)
     lmf = frq .< maf .|| frq .> 1 - maf # low maf loci
-    best, nhp = sum(efct[efct .> 0]), size(qhp, 2)
-    ideal, va, np, nn, nmp, nmn = Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]
+    best, nhp = sum(efct[efct.>0]), size(qhp, 2)
+    ideal, va, np, nn, nmp, nmn =
+        Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]
 
     for ig in sort(unique(hgrt)) # !!! below can be vectorized !!!
         ihp = view(qhp, :, hgrt .== ig) # QTL haplotypes of the ith generation
         ss = sum(ihp, dims = 2) # sum of haplotypes
-        plf = (ss .== 0   .&& efct .> 0)
+        plf = (ss .== 0 .&& efct .> 0)
         prf = (ss .== nhp .&& efct .< 0)
-        nlf = (ss .== 0   .&& efct .< 0)
+        nlf = (ss .== 0 .&& efct .< 0)
         nrf = (ss .== nhp .&& efct .> 0)
         plost = sum(plf) + sum(prf)
         nlost = sum(nlf) + sum(nrf)
@@ -223,16 +232,16 @@ function idealPop(xy, grt, lmp; maf = 0.2)
     else
         Int8.(isodd.(Mmap.mmap(xy, Matrix{et}, (ir, ic), 24)))
     end
-    ideal, va, np, nn, nmp, nmn = 
+    ideal, va, np, nn, nmp, nmn =
         qtl_fixed(view(gt, lmp.qtl, :), hgrt, lmp.efct[lmp.qtl], maf)
     clst, cmls = snp_fixed(view(gt, lmp.chip, :), hgrt, maf)
-    rlst, rmls = snp_fixed(view(gt, lmp.ref,  :), hgrt, maf)
+    rlst, rmls = snp_fixed(view(gt, lmp.ref, :), hgrt, maf)
     cvr, cvc, cvq = begin
         g0 = findall(hgrt .== 0)
         gn = findall(hgrt .== hgrt[end])
         q0 = mean(gt[:, g0], dims = 2)
         qn = mean(gt[:, gn], dims = 2) - q0
-        vld = q0 .≠ 0. .&& q0 .≠ 1.
+        vld = q0 .≠ 0.0 .&& q0 .≠ 1.0
         σ = sqrt.(q0 .* (1 .- q0))
         q0 .-= 0.5
         q0 ./= σ
@@ -267,15 +276,15 @@ away from population mean. The calculation stops when the ideal ID value SD
 stabilizes.
 """
 function idealID(nqtl, d; shape = 0.75, ϵ = 1e-5)
-    vi, n = -1., 0
+    vi, n = -1.0, 0
     ideal = Float64[]
     while true
-        for _ in 1:10
+        for _ = 1:10
             a = rand(d, nqtl) .* rand([-1, 1], nqtl) # QTL effects
             p = rand(Beta(shape, shape), nqtl) # QTL frequencies
             m = (2p .- 1)'a   # population mean
             v = sum(2 .* p .* (1 .- p) .* a .* a) # population genetic variance
-            b = (sum(a[a .> 0]) - m) / sqrt(v)    # best ID from population mean
+            b = (sum(a[a.>0]) - m) / sqrt(v)    # best ID from population mean
             push!(ideal, b)
         end
         n += 10
