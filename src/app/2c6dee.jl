@@ -7,8 +7,8 @@ function xps_2c6dee(;
     ngrt = 20,
     ΔF = 0.011,
     keep = false,
-    qt = false
-    ) # qt: quick test
+    qt = false,
+) # qt: quick test
     rst, ppsz, h², σₐ = "rst", 200, 0.25, 1.0
     nsir, ndam, pres, dist = 20, 50, 5, Normal()
     fdr, dir = "$rst/base", "$rst/2c6dee"
@@ -18,10 +18,10 @@ function xps_2c6dee(;
 
     # The working parts
     @info "Simulation begins"
-    for irpt in 1:nrpt
+    for irpt = 1:nrpt
         println()
         @info "Repeat $irpt of $nrpt"
-        isdir(fdr) && rm(fdr, recursive=true, force=true)
+        isdir(fdr) && rm(fdr, recursive = true, force = true)
         foo = if qt
             fdr = "$rst/test-suite"
             "Xm6k4"
@@ -30,44 +30,72 @@ function xps_2c6dee(;
         end
 
         # random selectio for a few generations
-        bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d=dist)
+        bar = cattle_founder(fdr, dir, foo, ppsz, nlc, nqtl, nref, d = dist)
         lmp = deserialize("$dir/$bar-map.ser") # each sample has its own map
-        ped = initPedigree("$dir/$bar-uhp.xy", lmp, σₑ, fg=-pres)
-        simpleSelection("$dir/$bar-uhp.xy", ped, lmp, nsir, ndam, pres, σₑ,
-            random=true, mp=false)
+        ped = initPedigree("$dir/$bar-uhp.xy", lmp, σₑ, fg = -pres)
+        simpleSelection(
+            "$dir/$bar-uhp.xy",
+            ped,
+            lmp,
+            nsir,
+            ndam,
+            pres,
+            σₑ,
+            random = true,
+            mp = false,
+        )
 
         # phenotype selection not possible as no male phenotypes
         # Pedigree selection
         pop = copy(ped)
-        cp("$dir/$bar-uhp.xy", "$dir/$bar-spd.xy", force=true)
-        simpleSelection("$dir/$bar-spd.xy", pop, lmp, nsir, ndam, ngrt, σₑ,
-            ebv=true, mp=false)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-spd.xy", force = true)
+        simpleSelection(
+            "$dir/$bar-spd.xy",
+            pop,
+            lmp,
+            nsir,
+            ndam,
+            ngrt,
+            σₑ,
+            ebv = true,
+            mp = false,
+        )
 
         # Genomic selection
         pop = copy(ped)
-        cp("$dir/$bar-uhp.xy", "$dir/$bar-sgs.xy", force=true)
-        simpleSelection("$dir/$bar-sgs.xy", pop, lmp, nsir, ndam, ngrt, σₑ,
-            ebv=true, gs=true, mp=false)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-sgs.xy", force = true)
+        simpleSelection(
+            "$dir/$bar-sgs.xy",
+            pop,
+            lmp,
+            nsir,
+            ndam,
+            ngrt,
+            σₑ,
+            ebv = true,
+            gs = true,
+            mp = false,
+        )
 
         # Optimum contribution with A on pedigree
         pop = copy(ped)
-        cp("$dir/$bar-uhp.xy", "$dir/$bar-oap.xy", force=true)
-        optSelection("$dir/$bar-oap.xy", pop, lmp, ngrt, σₑ, ΔF, op=1, k₀=0.027)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-oap.xy", force = true)
+        optSelection("$dir/$bar-oap.xy", pop, lmp, ngrt, σₑ, ΔF, op = 1, k₀ = 0.027)
 
         # Optimum contribution with A on genomic selection
         pop = copy(ped)
-        cp("$dir/$bar-uhp.xy", "$dir/$bar-oag.xy", force=true)
-        optSelection("$dir/$bar-oag.xy", pop, lmp, ngrt, σₑ, ΔF, op=2, k₀=0.027)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-oag.xy", force = true)
+        optSelection("$dir/$bar-oag.xy", pop, lmp, ngrt, σₑ, ΔF, op = 2, k₀ = 0.027)
 
         # Optimum contribution with G on genomic selection
         pop = copy(ped)
-        cp("$dir/$bar-uhp.xy", "$dir/$bar-ogg.xy", force=true)
-        optSelection("$dir/$bar-ogg.xy", pop, lmp, ngrt, σₑ, ΔF, op=3, k₀=0.027)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-ogg.xy", force = true)
+        optSelection("$dir/$bar-ogg.xy", pop, lmp, ngrt, σₑ, ΔF, op = 3, k₀ = 0.027)
 
         # Optimum contribution with E on genomic selection, E is A with true IBD
         pop = copy(ped)
-        cp("$dir/$bar-uhp.xy", "$dir/$bar-oeg.xy", force=true)
-        optSelection("$dir/$bar-oeg.xy", pop, lmp, ngrt, σₑ, ΔF, op=4, k₀=0.027)
+        cp("$dir/$bar-uhp.xy", "$dir/$bar-oeg.xy", force = true)
+        optSelection("$dir/$bar-oeg.xy", pop, lmp, ngrt, σₑ, ΔF, op = 4, k₀ = 0.027)
 
         @info "Summarizing repeat $irpt of $nrpt"
         sum_2c6dee(dir, bar, lmp)
@@ -79,9 +107,19 @@ end
 function sum_2c6dee(dir, bar, lmp)
     for sel in ["sgs", "spd", "oeg", "oag", "ogg", "oap"]
         ped = deserialize("$dir/$bar-$sel+ped.ser")
-        sp = DataFrame(mbv=Float64[], vbv=Float64[], mF=Float64[], mFr=Float64[],
-            bcr=Float64[], scr=Float64[], dcr=Float64[], np=Float64[], nm=Float64[],
-            ncp=Float64[], ncm=Float64[])
+        sp = DataFrame(
+            mbv = Float64[],
+            vbv = Float64[],
+            mF = Float64[],
+            mFr = Float64[],
+            bcr = Float64[],
+            scr = Float64[],
+            dcr = Float64[],
+            np = Float64[],
+            nm = Float64[],
+            ncp = Float64[],
+            ncm = Float64[],
+        )
         for grt in groupby(ped, :grt)
             mbv = mean(grt.tbv)
             vbv = var(grt.tbv)
@@ -100,7 +138,8 @@ function sum_2c6dee(dir, bar, lmp)
         end
         ideal, va, plst, nlst, pmls, nmls = idealPop("$dir/$bar-$sel.xy", ped.grt, lmp)
         open("$dir/2c6dee.bin", "a") do io
-            write(io,
+            write(
+                io,
                 sp.mbv,  # 1
                 sp.vbv,  # as requested by SMS on 2023-05-21, by Theo
                 sp.mF,   # 3
@@ -117,7 +156,8 @@ function sum_2c6dee(dir, bar, lmp)
                 plst,    # 14. n. of positive qtl lost
                 nlst,    # 15
                 pmls,    # 16. no. of positive qtl lost of maf 0.2
-                nmls)    # 17. no. of negative qtl lost of maf 0.2
+                nmls,
+            )    # 17. no. of negative qtl lost of maf 0.2
         end
     end
 end

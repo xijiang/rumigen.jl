@@ -29,6 +29,6 @@ include("util.jl")
 include("vcf.jl")
 include("xymat.jl")
 
-Relation = Dict{Tuple{Int, Int}, Float64}
+Relation = Dict{Tuple{Int,Int},Float64}
 Base.show(io::IO, f::Float64) = @printf(io, "%.3f", f)
 end # module rumigen

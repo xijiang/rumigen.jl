@@ -2,7 +2,7 @@ using Test, rumigen
 
 tmp = tempdir()
 tdir = "$tmp/rumigen-test"
-isdir(tdir) && rm(tdir, recursive=true)
+isdir(tdir) && rm(tdir, recursive = true)
 mkpath(tdir)
 
 #=
@@ -29,4 +29,4 @@ end
     @test m3 == hps
 end
 
-rm(tdir, recursive=true)
+rm(tdir, recursive = true)

@@ -5,10 +5,10 @@ Allele frequencies are sampled from a `Beta(.75, .75)`,
 conditioned on `maf`.
 It has a U-shaped distribution by default.
 """
-function quickgt(nlc::Int, nid::Int; maf = .2, bp = .75)
-    (maf ≤ 0 || maf ≥ .5) && error("maf $maf not in (0, 0.5)")
+function quickgt(nlc::Int, nid::Int; maf = 0.2, bp = 0.75)
+    (maf ≤ 0 || maf ≥ 0.5) && error("maf $maf not in (0, 0.5)")
     gt = zeros(Int8, nlc, nid)
-    for iic in 1:nlc
+    for iic = 1:nlc
         p = 0
         while p <= maf || p >= 1 - maf
             p = rand(Beta(bp, bp))
@@ -24,11 +24,11 @@ A quick way to simulate haplotypes of `nLoci` by `2nID`.  Allele
 Frequencies are sampled from a `Beta(.75, .75)`, conditioned on
 `maf`.  It has a U-shaped distribution by default.
 """
-function quickhap(nlc, nid; maf = 0.2, bp = .75)
-    (maf ≤ 0 || maf ≥ .5) && error("maf $maf not in (0, 0.5)")
+function quickhap(nlc, nid; maf = 0.2, bp = 0.75)
+    (maf ≤ 0 || maf ≥ 0.5) && error("maf $maf not in (0, 0.5)")
     nhp = 2nid
     hp = zeros(Int8, nlc, nhp)
-    for iic in 1:nlc
+    for iic = 1:nlc
         p = 0
         while p <= maf || p >= 1 - maf
             p = rand(Beta(bp, bp))
@@ -43,11 +43,11 @@ end
 Normalize QTL effect, such that the TBV variance is within `1.0 ± ϵ`.
 """
 function norm_qtl(Q::Matrix{Int8}, efct, ϵ)
-    nqtl= size(Q, 1)
+    nqtl = size(Q, 1)
     bv = Q'efct
     m, s = mean(bv), std(bv)
     while abs(m) > ϵ || abs(s - 1) > ϵ
-        efct .-= m/nqtl
+        efct .-= m / nqtl
         efct ./= s
         bv = Q'efct
         m, s = mean(bv), std(bv)
@@ -66,14 +66,15 @@ function simQTL(xy::AbstractString, mmp::AbstractString; d = Laplace())
     nq = sum(qtn)
     ihdr = readhdr(xy)
     mt, et, mj, ir, ic = xyhdr(ihdr)
-    (mt == 'F' && mj == 0 && et == Int8 && ir == length(qtn)) || error("Not a proper input $xy")
+    (mt == 'F' && mj == 0 && et == Int8 && ir == length(qtn)) ||
+        error("Not a proper input $xy")
     snp = Mmap.mmap(xy, Matrix{Int8}, (ir, ic), 24)
     qtl = view(snp, qtn, 1:2:ic) + view(snp, qtn, 2:2:ic)
     efct = rand(d, nq) .* rand([-1, 1], nq)
     norm_qtl(qtl, efct, 1e-5)
     imp.efct = zeros(ir)
     j = 1
-    for i in 1:ir
+    for i = 1:ir
         qtn[i] && (imp.efct[i] = efct[j]; j += 1)
     end
     serialize(mmp, imp)
@@ -96,24 +97,27 @@ information in `lmp`. The pedigree returned is a DataFrame with column:
 - `c`: contribution of the ID to the next generation, default 0
 """
 function initPedigree(xy, lmp, σₑ; fg = 0)
-    (:qtl ∈ propertynames(lmp) && :efct ∈ propertynames(lmp)) || error("No QTL column in $lmp")
+    (:qtl ∈ propertynames(lmp) && :efct ∈ propertynames(lmp)) ||
+        error("No QTL column in $lmp")
     hdr = readhdr(xy)
     mt, _, mj, ir, ic = xyhdr(hdr)
     (mt == 'F' && mj == 0) || error("Not a proper input $xy")
     nid = ic ÷ 2
     tbv, pht = xy2gp(xy, 1:nid, lmp, σₑ)
-    DataFrame(id = 1:nid,
-              pa = 0,
-              ma = 0,
-              sex = rand(0:1, nid),
-              grt = fg,
-              tbv = tbv,
-              pht = allowmissing(pht),
-              ebv = 0.,
-              F = 0.,
-              Fr = 0.,
-              Fp = 0.,
-              c = 0.)
+    DataFrame(
+        id = 1:nid,
+        pa = 0,
+        ma = 0,
+        sex = rand(0:1, nid),
+        grt = fg,
+        tbv = tbv,
+        pht = allowmissing(pht),
+        ebv = 0.0,
+        F = 0.0,
+        Fr = 0.0,
+        Fp = 0.0,
+        c = 0.0,
+    )
 end
 
 """
@@ -129,8 +133,8 @@ function randPed(nid, ng)
     sex = [ones(Int, nsir); zeros(Int, nid - nsir)]
     ped = DataFrame(pa = zeros(Int, nid), ma = zeros(Int, nid), sex = sex, grt = 0)
 
-    for ig in 1:ng
-        pm = randomMate(be[1]:be[2], be[3]:be[4], noff=nid)
+    for ig = 1:ng
+        pm = randomMate(be[1]:be[2], be[3]:be[4], noff = nid)
         append!(ped, DataFrame(pa = pm[:, 1], ma = pm[:, 2], sex = sex, grt = ig))
         be .+= nid
     end

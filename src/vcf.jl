@@ -14,7 +14,8 @@ function vcfdim(vcf::AbstractString)
                 continue
             end
             nlc += 1
-            nlc % 100_000 == 0 && print("\r\tn_ID = $(commas(nid)); n_Loci = $(commas(nlc))")
+            nlc % 100_000 == 0 &&
+                print("\r\tn_ID = $(commas(nid)); n_Loci = $(commas(nlc))")
         end
     end
     println("\r\tn_ID = $(commas(nid)); n_Loci = $(commas(nlc))\n")
@@ -44,7 +45,7 @@ end
 Convert a line of VCF file into a tuple of chromosome, position, frequency of allele 1.
 Write the alternative alleles into a vector of Int8.
 """
-function vcfln2av(line::AbstractString, av::AbstractVector{Int8}; sep='\t')
+function vcfln2av(line::AbstractString, av::AbstractVector{Int8}; sep = '\t')
     f, _ = findnth(line, sep, 1)
     chr = parse(Int8, line[1:f-1])
     f1, _ = findnth(line, sep, 2)
@@ -52,7 +53,7 @@ function vcfln2av(line::AbstractString, av::AbstractVector{Int8}; sep='\t')
 
     f, _ = findnth(line, sep, 9)
     n, k = length(line), 0
-    for i in f+1:4:n
+    for i = f+1:4:n
         k += 1
         av[2k-1] = line[i]
         av[2k] = line[i+2]
@@ -67,11 +68,11 @@ end
 Convert a VCF file into a `xy-hap.xy` and `xy-map.ser`.
 It deals with 10k loci parallelly at a time.
 """
-function vcf2xy(vcf::AbstractString, xy::AbstractString; nln=10000)
+function vcf2xy(vcf::AbstractString, xy::AbstractString; nln = 10000)
     nlc, nid = vcfdim(vcf)
     hdr = xyheader(nlc, 2nid)
 
-    mmp = DataFrame(chr=zeros(Int8, nlc), pos=zeros(Int32, nlc), frq=zeros(nlc)) # map
+    mmp = DataFrame(chr = zeros(Int8, nlc), pos = zeros(Int32, nlc), frq = zeros(nlc)) # map
     write(xy * "-hap.xy", Ref(hdr))
 
     # Create blocks for parallel processing
@@ -118,8 +119,7 @@ function vcf1stln(vcf::AbstractString)
     end
 end
 
-
-function zvcf2xy(zvcf::AbstractString, xy::AbstractString; nln=10000)
+function zvcf2xy(zvcf::AbstractString, xy::AbstractString; nln = 10000)
     @info "Counting loci and individuals in $zvcf"
     nlc, nid = 0, 0
     open(`pigz -dc $zvcf`, "r+") do ii
@@ -130,20 +130,21 @@ function zvcf2xy(zvcf::AbstractString, xy::AbstractString; nln=10000)
                 continue
             end
             nlc += 1
-            nlc % 100_000 == 0 && print("\r\tn_ID = $(commas(nid)); n_Loci = $(commas(nlc))")
+            nlc % 100_000 == 0 &&
+                print("\r\tn_ID = $(commas(nid)); n_Loci = $(commas(nlc))")
         end
         println("\r\tn_ID = $(commas(nid)); n_Loci = $(commas(nlc))\n")
     end
 
     open(`pigz -dc $zvcf`, "r+") do ii
         hdr = xyheader(nlc, 2nid)
-        mmp = DataFrame(chr=zeros(Int8, nlc), pos=zeros(Int32, nlc), frq=zeros(nlc)) # map
+        mmp = DataFrame(chr = zeros(Int8, nlc), pos = zeros(Int32, nlc), frq = zeros(nlc)) # map
         write(xy * "-hap.xy", Ref(hdr))
 
         bs = blksz(nlc, nln)
         blks = collect(bs:bs:nlc)
         blks[end] < nlc && push!(blks, nlc)
-    
+
         @info "Processing the genotypes:"
         for line in eachline(ii)
             line[2] ≠ '#' && break
